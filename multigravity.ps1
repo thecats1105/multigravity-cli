@@ -180,14 +180,19 @@ function Invoke-DeleteProfile {
 
     $confirm = Read-Host "Delete profile '$PROFILE' and all its data? [y/N]"
     if ($confirm -match "^[Yy]$") {
-        Remove-Item -Recurse -Force $PROFILE_DIR
-        
-        $SHORTCUT_PATH = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Multigravity $PROFILE.lnk"
-        if (Test-Path $SHORTCUT_PATH) {
-            Remove-Item -Force $SHORTCUT_PATH
-            Write-Host "Removed shortcut: $SHORTCUT_PATH"
+        try {
+            Remove-Item -Recurse -Force $PROFILE_DIR -ErrorAction Stop
+            
+            $SHORTCUT_PATH = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Multigravity $PROFILE.lnk"
+            if (Test-Path $SHORTCUT_PATH) {
+                Remove-Item -Force $SHORTCUT_PATH
+                Write-Host "Removed shortcut: $SHORTCUT_PATH"
+            }
+            Write-Host "Deleted profile '$PROFILE'"
+        } catch {
+            Write-Error "Error: could not delete profile directory. Ensure Antigravity is closed and no files are in use."
+            Write-Host "Details: $_"
         }
-        Write-Host "Deleted profile '$PROFILE'"
     }
     else {
         Write-Host "Aborted."
@@ -286,18 +291,18 @@ function Invoke-DoctorCli {
 
     # 1. Antigravity Installation
     if ($APP -and (Test-Path $APP)) {
-        Write-Host "  [✓] Antigravity: Found at $APP"
+        Write-Host "  [OK] Antigravity: Found at $APP"
     } else {
-        Write-Host "  [✗] Antigravity: Not found. Ensure it is installed or set MULTIGRAVITY_APP."
+        Write-Host "  [FAIL] Antigravity: Not found. Ensure it is installed or set MULTIGRAVITY_APP."
         $errors++
     }
 
     # 2. Path Check
     $cmdObj = Get-Command multigravity -ErrorAction SilentlyContinue
     if ($cmdObj) {
-        Write-Host "  [✓] Global Binary: $($cmdObj.Source)"
+        Write-Host "  [OK] Global Binary: $($cmdObj.Source)"
     } else {
-        Write-Host "  [!] Global Binary: Not found in PATH. Run install script or update PATH."
+        Write-Host "  [WARN] Global Binary: Not found in PATH. Run install script or update PATH."
         $warnings++
     }
 
@@ -308,24 +313,24 @@ function Invoke-DoctorCli {
             $testFile = Join-Path $BASE ".write-test"
             New-Item -ItemType File -Path $testFile -Force -ErrorAction Stop | Out-Null
             Remove-Item $testFile -Force
-            Write-Host "  [✓] Profile storage: $BASE (writable)"
+            Write-Host "  [OK] Profile storage: $BASE (writable)"
         } catch {
-            Write-Host "  [✗] Profile storage: $BASE (NOT writable)"
+            Write-Host "  [FAIL] Profile storage: $BASE (NOT writable)"
             $errors++
         }
     } else {
-        Write-Host "  [!] Profile storage: $BASE (Not yet created)"
+        Write-Host "  [WARN] Profile storage: $BASE (Not yet created)"
     }
 
     Write-Host ""
     if ($errors -eq 0) {
         if ($warnings -eq 0) {
-            Write-Host "✓ Your environment looks perfect!"
+            Write-Host "Your environment looks perfect!"
         } else {
             Write-Host "Found $warnings warning(s). Multigravity should still work, but some features might be degraded."
         }
     } else {
-        Write-Host "✗ Found $errors error(s) and $warnings warning(s). Please fix the errors above."
+        Write-Host "Found $errors error(s) and $warnings warning(s). Please fix the errors above."
     }
 }
 
@@ -344,11 +349,10 @@ function Invoke-UpdateCli {
 
     Write-Host "Updating multigravity from $script_url ..."
     try {
-        Invoke-WebRequest -Uri $script_url -OutFile "$target.tmp" -ErrorAction Stop
-        Move-Item -Path "$target.tmp" -Destination $target -Force
+        $result = Invoke-WebRequest -Uri $script_url -UseBasicParsing -ErrorAction Stop
+        [System.IO.File]::WriteAllText($target, $result.Content, [System.Text.Encoding]::UTF8)
         Write-Host "Successfully updated multigravity!"
     } catch {
-        if (Test-Path "$target.tmp") { Remove-Item "$target.tmp" }
         Write-Error "Error: failed to download update: $_"
         exit 1
     }

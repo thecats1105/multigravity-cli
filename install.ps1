@@ -39,15 +39,23 @@ if (!$IN_PATH) {
 }
 
 Write-Step "Downloading multigravity.ps1..."
-Invoke-WebRequest -Uri "$RAW/multigravity.ps1" -OutFile "$INSTALL_DIR\multigravity.ps1"
+# Use -UseBasicParsing for compatibility with PS 5.1 on some systems
+# We download to a string first to ensure we can save with the correct encoding
+try {
+    $scriptContent = Invoke-WebRequest -Uri "$RAW/multigravity.ps1" -UseBasicParsing -ErrorAction Stop
+    [System.IO.File]::WriteAllText("$INSTALL_DIR\multigravity.ps1", $scriptContent.Content, [System.Text.Encoding]::UTF8)
+} catch {
+    Abort "Failed to download multigravity.ps1: $_"
+}
 
 Write-Step "Creating wrapper script..."
 $wrapper = @"
 @echo off
-powershell.exe -ExecutionPolicy Bypass -File "%~dp0\multigravity.ps1" %*
+powershell.exe -ExecutionPolicy Bypass -File "%~dp0multigravity.ps1" %*
 "@
 
-$wrapper | Out-File -Encoding ASCII -FilePath "$INSTALL_DIR\multigravity.cmd" -Force
+# Save wrapper as ASCII for widest compatibility with cmd.exe
+[System.IO.File]::WriteAllText("$INSTALL_DIR\multigravity.cmd", $wrapper, [System.Text.Encoding]::ASCII)
 
 Write-Host ""
 Write-Host "✓ Multigravity installed successfully!"
