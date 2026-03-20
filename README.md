@@ -1,93 +1,134 @@
+![Multigravity](assets/multigravity-logo.jpg)
+
+# Multigravity
+
+**Run multiple Antigravity IDE profiles simultaneously — each with its own accounts, extensions, and settings.**
+
+No more logging in and out. Launch as many profiles as you need, all at once.
+
 [![GitHub repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/sujitagarwal/multigravity-cli)
 [![GitHub profile](https://img.shields.io/badge/GitHub-Profile-lightgrey?logo=github)](https://github.com/sujitagarwal)
 [![GitHub stars](https://img.shields.io/github/stars/sujitagarwal/multigravity-cli?style=social)](https://github.com/sujitagarwal/multigravity-cli/stargazers)
-
-![Multigravity](assets/multigravity-logo.jpg)
-# Multigravity
-
-
-**Run multiple Antigravity IDE profiles at the same time — each with its own accounts, settings, and extensions.**
-
-No more logging in and out. Just switch profiles instantly or use them all at once!
-
-> Note: Suported OS: macOS, Windows and Linux.
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)](#install)
 
 ---
 
 ## Install
 
-### macOS / Linux
-
-Open your terminal and paste this:
+**macOS / Linux**
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/install.sh)"
 ```
 
-### Windows
-
-Open **PowerShell** and paste this:
+**Windows** — open PowerShell and run:
 
 ```powershell
 irm https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/install.ps1 | iex
 ```
 
-That's it. Multigravity is now installed.
-
 ---
 
-## Getting Started
-
-### 1. Create a profile
-
-Give it any name you like — your name, a project, a client, anything:
+## Quick Start
 
 ```bash
+# Create profiles
 multigravity new work
 multigravity new personal
-```
 
-This also creates a clickable launcher:
-
-- macOS: `~/Applications/Multigravity <name>.app`
-- Windows: **Start Menu** shortcut
-- Linux: `~/.local/share/applications/multigravity-<name>.desktop`
-
-### 2. Open a profile
-
-```bash
+# Launch a profile
 multigravity work
-```
 
-Antigravity will open using that profile's isolated settings, accounts, and extensions.
-
-You can also pass normal Antigravity arguments through:
-
-```bash
-multigravity work --new-window
+# Pass arguments straight through to Antigravity
 multigravity work .
-multigravity work path/to/file.py
+multigravity work path/to/project
+multigravity work --new-window
 ```
 
-### 3. See all your profiles
+Each profile gets an automatic clickable launcher:
+
+| Platform | Location |
+|----------|----------|
+| macOS    | `~/Applications/Multigravity <name>.app` |
+| Windows  | Start Menu → Programs |
+| Linux    | `~/.local/share/applications/multigravity-<name>.desktop` |
+
+---
+
+## Commands
+
+### Profile Management
+
+| Command | Description |
+|---------|-------------|
+| `multigravity new <name>` | Create a new full profile |
+| `multigravity new <name> --shared` | Create a lightweight profile (shared extensions & settings, isolated accounts) |
+| `multigravity new <name> --from <template>` | Create a profile from a saved template |
+| `multigravity <name>` | Launch a profile |
+| `multigravity list` | List all profiles |
+| `multigravity status` | Show running state, type, last used, and size per profile |
+| `multigravity clone <src> <dest>` | Copy an existing profile |
+| `multigravity rename <old> <new>` | Rename a profile |
+| `multigravity delete <name>` | Delete a profile and all its data |
+
+### Templates
+
+| Command | Description |
+|---------|-------------|
+| `multigravity template save <profile> <name>` | Save a profile as a reusable template |
+| `multigravity template list` | List saved templates |
+| `multigravity template delete <name>` | Remove a template |
+
+### Backup & Transfer
+
+| Command | Description |
+|---------|-------------|
+| `multigravity export <name> [path]` | Archive a profile to `.tar.gz` (`.zip` on Windows) |
+| `multigravity import <archive> [name]` | Restore a profile from an archive |
+
+### Utilities
+
+| Command | Description |
+|---------|-------------|
+| `multigravity stats` | Show disk usage per profile |
+| `multigravity doctor` | Diagnose your environment |
+| `multigravity update` | Update Multigravity to the latest version |
+| `multigravity completion` | Set up shell tab-completion |
+| `multigravity help` | Show help |
+
+---
+
+## Shared Profiles
+
+Full profiles are fully isolated — separate extensions, settings, and accounts. That's the default.
+
+**Shared profiles** go lighter: they symlink extensions and settings from your main Antigravity install, isolating only the account/auth layer. Useful when you need a second account but don't want to duplicate gigabytes of extensions.
 
 ```bash
-multigravity list
-```
-
-### 4. Clone a profile
-
-Duplicate an existing setup to a new profile:
-
-```bash
-multigravity clone work work-copy
+multigravity new client-x --shared
 ```
 
 ---
 
-## Power User Features
+## Templates
 
-### Shell Autocompletion
+Save a configured profile as a template, then spin up new profiles from it instantly:
+
+```bash
+# Save your ideal setup as a template
+multigravity template save work base
+
+# Create new profiles from it
+multigravity new project-a --from base
+multigravity new project-b --from base
+
+# See what templates you have
+multigravity template list
+```
+
+---
+
+## Shell Completion
 
 Enable tab-completion for commands and profile names:
 
@@ -95,86 +136,40 @@ Enable tab-completion for commands and profile names:
 multigravity completion
 ```
 
-Follow the instructions shown to add the setup to your shell profile (`.zshrc`, `.bashrc`, or PowerShell `$PROFILE`).
-
-### Self-Update
-
-Keep multigravity up to date with one command:
-
-```bash
-multigravity update
-```
-
-### System Diagnosis
-
-Check if your environment is set up correctly:
-
-```bash
-multigravity doctor
-```
-
-### Storage Stats
-
-See how much space your profiles are taking up:
-
-```bash
-multigravity stats
-```
+Follow the instructions to add it to your `.zshrc`, `.bashrc`, or PowerShell `$PROFILE`.
 
 ---
 
-## Other Commands
+## Uninstall
 
-### Rename a profile
-
-```bash
-multigravity rename work freelance
-```
-
-### Delete a profile
+**macOS / Linux**
 
 ```bash
-multigravity delete personal
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/uninstall.sh)"
 ```
 
-You'll be asked to confirm before anything is deleted.
+**Windows**
 
-### Get help
-
-```bash
-multigravity help
+```powershell
+irm https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/uninstall.ps1 | iex
 ```
+
+You'll be asked whether to remove your profile data — nothing is deleted without confirmation.
 
 ---
 
 ## Profile Name Rules
 
-- Letters, numbers, and hyphens only
-- Must start with a letter or number
-- ✅ `work`, `client-a`, `test1`
-- ❌ `-name`, `my_profile`
+Letters, numbers, and hyphens only. Must start with a letter or number.
 
----
-
-## App Shortcuts
-
-Every profile automatically gets a clickable launcher so you can open profiles directly without using the terminal:
-
-- **macOS**: App bundle in `~/Applications`
-- **Windows**: Shortcut in **Start Menu > Programs**
-- **Linux**: Desktop entry in `~/.local/share/applications`
+```
+✅  work   client-a   test1
+❌  -name  my_profile
+```
 
 ---
 
 ## Credits
 
-- **Windows support** contributed by [Samin Yeasar](https://github.com/Solez-ai).
-- **Linux support** contributed by [Md Rayyan Nawaz](https://github.com/therayyanawaz).
-
----
-
-## Links
-
-- [Repository](https://github.com/sujitagarwal/multigravity-cli)
-- [Profile](https://github.com/sujitagarwal)
-- [Star the Repository](https://github.com/sujitagarwal/multigravity-cli/stargazers)
+- **Windows support** — [Samin Yeasar](https://github.com/Solez-ai)
+- **Linux support** — [Md Rayyan Nawaz](https://github.com/therayyanawaz)
