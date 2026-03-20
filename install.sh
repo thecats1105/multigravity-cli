@@ -30,12 +30,30 @@ command -v curl &>/dev/null || abort "curl is required but not found"
 if [ ! -w "$INSTALL_DIR" ]; then
   INSTALL_DIR="$HOME/.local/bin"
   mkdir -p "$INSTALL_DIR"
-  # warn if not in PATH
+
+  # auto-add to PATH in the user's shell profile if not already there
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    echo "Warning: $INSTALL_DIR is not in your PATH."
-    echo "  Add this to your shell profile (~/.zshrc or ~/.bashrc):"
-    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
-    echo ""
+    case "${SHELL:-}" in
+      */zsh)  SHELL_RC="$HOME/.zshrc" ;;
+      */fish) SHELL_RC="$HOME/.config/fish/config.fish" ;;
+      *)      SHELL_RC="$HOME/.bashrc" ;;
+    esac
+
+    LINE='export PATH="$HOME/.local/bin:$PATH"'
+
+    if [ "$SHELL_RC" = "$HOME/.config/fish/config.fish" ]; then
+      LINE='fish_add_path "$HOME/.local/bin"'
+    fi
+
+    if ! grep -qF "$HOME/.local/bin" "$SHELL_RC" 2>/dev/null; then
+      echo "" >> "$SHELL_RC"
+      echo "# Added by Multigravity installer" >> "$SHELL_RC"
+      echo "$LINE" >> "$SHELL_RC"
+      print_step "Added $INSTALL_DIR to PATH in $SHELL_RC"
+    fi
+
+    # apply to current session so the next commands in this script work
+    export PATH="$INSTALL_DIR:$PATH"
   fi
 fi
 
@@ -54,6 +72,9 @@ fi
 
 echo ""
 echo "✓ Multigravity installed successfully!"
+echo ""
+echo "Reload your shell to apply PATH changes:"
+echo "  source ~/.zshrc   (or ~/.bashrc, or open a new terminal)"
 echo ""
 echo "Usage:"
 echo "  multigravity help"

@@ -41,6 +41,14 @@ profile_dir() {
   printf '%s/%s\n' "$BASE" "$1"
 }
 
+templates_dir() {
+  printf '%s/.templates\n' "$BASE"
+}
+
+is_shared_profile() {
+  [ -f "$(profile_dir "$1")/.shared" ]
+}
+
 user_data_dir() {
   local profile_path=$1
 
@@ -57,6 +65,17 @@ user_data_dir() {
 extensions_dir() {
   local profile_path=$1
   printf '%s/.antigravity/extensions\n' "$profile_path"
+}
+
+system_user_data_dir() {
+  case "$(platform)" in
+    darwin) printf '%s/Library/Application Support/Antigravity\n' "$HOME" ;;
+    linux)  printf '%s/.config/Antigravity\n' "$HOME" ;;
+  esac
+}
+
+system_extensions_dir() {
+  printf '%s/.antigravity/extensions\n' "$HOME"
 }
 
 linux_launcher_dir() {
@@ -182,6 +201,56 @@ create_profile_layout() {
     linux)
       mkdir -p \
         "$profile_path/.config/Antigravity" \
+        "$profile_path/.cache" \
+        "$profile_path/.local/share" \
+        "$profile_path/.local/state"
+      ;;
+  esac
+}
+
+create_shared_layout() {
+  local profile_path=$1
+  local sys_data sys_ext data_dir ext_dir
+
+  sys_data="$(system_user_data_dir)"
+  sys_ext="$(system_extensions_dir)"
+
+  mkdir -p "$profile_path"
+  touch "$profile_path/.shared"
+
+  # Isolated user-data dir so accounts stay separate
+  data_dir="$(user_data_dir "$profile_path")"
+  mkdir -p "$data_dir/User"
+
+  # Point settings/keybindings/snippets at the system install (read-only intent)
+  if [ -d "$sys_data/User" ]; then
+    local f
+    for f in settings.json keybindings.json snippets; do
+      if [ -e "$sys_data/User/$f" ] && [ ! -e "$data_dir/User/$f" ]; then
+        ln -s "$sys_data/User/$f" "$data_dir/User/$f"
+      fi
+    done
+  fi
+
+  # Share the system extensions directory rather than an empty copy
+  ext_dir="$(extensions_dir "$profile_path")"
+  mkdir -p "$(dirname "$ext_dir")"
+  if [ -d "$sys_ext" ]; then
+    rm -rf "$ext_dir"
+    ln -s "$sys_ext" "$ext_dir"
+  else
+    mkdir -p "$ext_dir"
+  fi
+
+  case "$(platform)" in
+    darwin)
+      mkdir -p "$profile_path/Library/Application Support"
+      if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
+        ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
+      fi
+      ;;
+    linux)
+      mkdir -p \
         "$profile_path/.cache" \
         "$profile_path/.local/share" \
         "$profile_path/.local/state"
@@ -408,7 +477,10 @@ list_profiles() {
 
   for dir in "$BASE"/*; do
     [ -d "$dir" ] || continue
-    entries="${entries}$(basename "$dir")"$'\n'
+    local n
+    n="$(basename "$dir")"
+    [ "$n" = ".templates" ] && continue
+    entries="${entries}${n}"$'\n'
   done
 
   if [ -z "$entries" ]; then
@@ -421,18 +493,39 @@ list_profiles() {
 }
 
 new_profile() {
-  local profile=$1
-  local profile_path
+  local profile="" shared=false from_tpl=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --shared)       shared=true ;;
+      --from)         from_tpl="${2-}"; shift ;;
+      -*)             abort "unknown option: $1" ;;
+      *)              profile="$1" ;;
+    esac
+    shift
+  done
 
   validate_name "$profile"
 
+  local profile_path
   profile_path="$(profile_dir "$profile")"
   if [ -d "$profile_path" ]; then
     abort "profile '$profile' already exists"
   fi
 
   mkdir -p "$BASE"
-  create_profile_layout "$profile_path"
+
+  if [ -n "$from_tpl" ]; then
+    local tpl_path
+    tpl_path="$(templates_dir)/$from_tpl"
+    [ -d "$tpl_path" ] || abort "template '$from_tpl' not found. Run: multigravity template list"
+    print_info "Creating profile '$profile' from template '$from_tpl'..."
+    cp -R "$tpl_path" "$profile_path"
+  elif [ "$shared" = true ]; then
+    create_shared_layout "$profile_path"
+  else
+    create_profile_layout "$profile_path"
+  fi
 
   print_info "Created profile '$profile'"
   create_shortcut "$profile"
@@ -595,13 +688,10 @@ profile_stats() {
     [ -d "$dir" ] || continue
     local name
     name=$(basename "$dir")
-    
+    [ "$name" = ".templates" ] && continue
+
     local size
-    if [ "$(uname -s)" = "Darwin" ]; then
-      size=$(du -sh "$dir" | cut -f1)
-    else
-      size=$(du -sh "$dir" | cut -f1)
-    fi
+    size=$(du -sh "$dir" | cut -f1)
 
     local ext_count
     ext_count=$(ls -1 "$(extensions_dir "$dir")" 2>/dev/null | wc -l | xargs)
@@ -614,6 +704,147 @@ profile_stats() {
   local total
   total=$(du -sh "$BASE" | cut -f1)
   print_info "Total usage: $total"
+}
+
+status_profiles() {
+  if [ ! -d "$BASE" ]; then
+    print_info "No profiles found."
+    return 0
+  fi
+
+  printf "%-18s %-10s %-12s %-20s %s\n" "PROFILE" "RUNNING" "TYPE" "LAST USED" "SIZE"
+  printf "%-18s %-10s %-12s %-20s %s\n" "-------" "-------" "----" "---------" "----"
+
+  local dir
+  for dir in "$BASE"/*; do
+    [ -d "$dir" ] || continue
+    local name
+    name="$(basename "$dir")"
+    [ "$name" = ".templates" ] && continue
+
+    local running="no"
+    local data_dir
+    data_dir="$(user_data_dir "$dir")"
+    if ps -eo args 2>/dev/null | grep -v grep | grep -qF "$data_dir"; then
+      running="yes"
+    fi
+
+    local ptype="full"
+    [ -f "$dir/.shared" ] && ptype="shared"
+
+    local last_used
+    case "$(platform)" in
+      darwin) last_used=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$dir" 2>/dev/null || echo "unknown") ;;
+      linux)  last_used=$(stat -c "%y" "$dir" 2>/dev/null | cut -d'.' -f1 || echo "unknown") ;;
+    esac
+
+    local size
+    size="$(du -sh "$dir" 2>/dev/null | cut -f1)"
+
+    if [ "$running" = "yes" ]; then
+      printf "%-18s \033[32m%-10s\033[0m %-12s %-20s %s\n" "$name" "$running" "$ptype" "$last_used" "$size"
+    else
+      printf "%-18s %-10s %-12s %-20s %s\n" "$name" "$running" "$ptype" "$last_used" "$size"
+    fi
+  done
+}
+
+template_cmd() {
+  local subcmd="${1-}"
+  shift || true
+
+  case "$subcmd" in
+    save)
+      local profile="${1-}" tpl_name="${2-}"
+      validate_name "$profile"
+      validate_name "$tpl_name"
+      local src_path tpl_dir tpl_path
+      src_path="$(profile_dir "$profile")"
+      [ -d "$src_path" ] || abort "profile '$profile' does not exist"
+      tpl_dir="$(templates_dir)"
+      tpl_path="$tpl_dir/$tpl_name"
+      [ -d "$tpl_path" ] && abort "template '$tpl_name' already exists"
+      mkdir -p "$tpl_dir"
+      print_info "Saving '$profile' as template '$tpl_name'..."
+      cp -R "$src_path" "$tpl_path"
+      rm -f "$tpl_path/.shared"
+      print_info "Saved template '$tpl_name'"
+      ;;
+    list)
+      local tpl_dir
+      tpl_dir="$(templates_dir)"
+      echo "Templates:"
+      if [ ! -d "$tpl_dir" ]; then
+        echo "  (none)"
+        return 0
+      fi
+      local any=false
+      for d in "$tpl_dir"/*; do
+        [ -d "$d" ] || continue
+        any=true
+        printf "  %-20s %s\n" "$(basename "$d")" "$(du -sh "$d" 2>/dev/null | cut -f1)"
+      done
+      [ "$any" = false ] && echo "  (none)"
+      ;;
+    delete)
+      local tpl_name="${1-}"
+      validate_name "$tpl_name"
+      local tpl_path
+      tpl_path="$(templates_dir)/$tpl_name"
+      [ -d "$tpl_path" ] || abort "template '$tpl_name' does not exist"
+      rm -rf "$tpl_path"
+      print_info "Deleted template '$tpl_name'"
+      ;;
+    *)
+      abort "usage: multigravity template <save|list|delete>"
+      ;;
+  esac
+}
+
+export_profile() {
+  local profile="${1-}" out="${2-}"
+  validate_name "$profile"
+
+  local profile_path
+  profile_path="$(profile_dir "$profile")"
+  [ -d "$profile_path" ] || abort "profile '$profile' does not exist"
+
+  [ -z "$out" ] && out="./${profile}.tar.gz"
+
+  print_info "Exporting '$profile' to $out ..."
+  tar -czf "$out" -C "$BASE" "$profile"
+  print_info "Done."
+}
+
+import_profile() {
+  local archive="${1-}" profile="${2-}"
+
+  [ -n "$archive" ] || abort "usage: multigravity import <archive.tar.gz> [name]"
+  [ -f "$archive" ]  || abort "file not found: $archive"
+
+  if [ -z "$profile" ]; then
+    profile="$(tar -tzf "$archive" 2>/dev/null | head -1 | cut -d'/' -f1)"
+    [ -n "$profile" ] || abort "cannot infer profile name from archive — pass a name explicitly"
+  fi
+
+  validate_name "$profile"
+
+  local dest
+  dest="$(profile_dir "$profile")"
+  [ -d "$dest" ] && abort "profile '$profile' already exists — choose a different name or delete it first"
+
+  mkdir -p "$BASE"
+  print_info "Importing as '$profile'..."
+
+  local top_dir
+  top_dir="$(tar -tzf "$archive" 2>/dev/null | head -1 | cut -d'/' -f1)"
+  tar -xzf "$archive" -C "$BASE"
+  if [ -n "$top_dir" ] && [ "$top_dir" != "$profile" ] && [ -d "$BASE/$top_dir" ]; then
+    mv "$BASE/$top_dir" "$dest"
+  fi
+
+  create_shortcut "$profile"
+  print_info "Imported profile '$profile'"
 }
 
 update_cli() {
@@ -670,9 +901,13 @@ _multigravity() {
     commands=(
         'new:Create a new profile'
         'list:List existing profiles'
+        'status:Show running state, type, and last-used time per profile'
         'rename:Rename a profile'
         'delete:Delete a profile'
         'clone:Clone an existing profile'
+        'template:Manage profile templates (save, list, delete)'
+        'export:Pack a profile into a tar.gz archive'
+        'import:Restore a profile from a tar.gz archive'
         'update:Update multigravity'
         'doctor:Run system diagnosis'
         'stats:Show profile storage usage'
@@ -709,19 +944,18 @@ _multigravity_completions() {
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="new list rename delete clone update doctor stats completion help"
- pocket
+    opts="new list status rename delete clone template export import update doctor stats completion help"
 
     if [[ ${COMP_CWORD} -eq 1 ]] ; then
         local profiles=$(multigravity list --raw 2>/dev/null)
-        COMPREPLY=( $(compgen -W "${opts} ${profiles}" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "${opts} ${profiles}" -- "${cur}") )
         return 0
     fi
 
     case "${prev}" in
         delete|rename|clone)
             local profiles=$(multigravity list --raw 2>/dev/null)
-            COMPREPLY=( $(compgen -W "${profiles}" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "${profiles}" -- "${cur}") )
             return 0
             ;;
     esac
@@ -739,17 +973,25 @@ usage() {
 Usage: multigravity <command> [args]
 
 Commands:
-  new <name>            Create a new named profile + desktop shortcut
-  list                  List existing profiles
-  rename <old> <new>    Rename a profile (updates its shortcut)
-  delete <name>         Delete a profile and its data
-  clone <src> <dest>    Clone an existing profile
-  update                Update multigravity to the latest version
-  doctor                Run a system diagnosis
-  stats                 Show storage usage per profile
-  completion            Show setup instructions for shell completion
-  <name> [args...]      Launch Antigravity with the given profile
-  help                  Show this help
+  new <name> [options]        Create a new profile + desktop shortcut
+      --shared                Share extensions & settings; isolate only accounts
+      --from <template>       Seed from a saved template
+  list                        List existing profiles
+  status                      Show running state, type, and last-used per profile
+  rename <old> <new>          Rename a profile (updates its shortcut)
+  delete <name>               Delete a profile and all its data
+  clone <src> <dest>          Copy an existing profile
+  template save <profile> <name>   Save a profile as a reusable template
+  template list               List saved templates
+  template delete <name>      Delete a template
+  export <name> [path]        Archive a profile to tar.gz
+  import <archive> [name]     Restore a profile from a tar.gz archive
+  update                      Update multigravity to the latest version
+  doctor                      Run a system diagnosis
+  stats                       Show storage usage per profile
+  completion                  Show setup instructions for shell completion
+  <name> [args...]            Launch Antigravity with the given profile
+  help                        Show this help
 
 Profile names: alphanumeric and hyphens only (e.g. work, personal, test-1)
 
@@ -761,10 +1003,14 @@ EOF
 
 case "$cmd" in
   new)
-    new_profile "${2-}"
+    shift
+    new_profile "$@"
     ;;
   list)
     list_profiles "${2-}"
+    ;;
+  status)
+    status_profiles
     ;;
   rename)
     rename_profile "${2-}" "${3-}"
@@ -774,6 +1020,16 @@ case "$cmd" in
     ;;
   clone)
     clone_profile "${2-}" "${3-}"
+    ;;
+  template)
+    shift
+    template_cmd "$@"
+    ;;
+  export)
+    export_profile "${2-}" "${3-}"
+    ;;
+  import)
+    import_profile "${2-}" "${3-}"
     ;;
   update)
     update_cli
