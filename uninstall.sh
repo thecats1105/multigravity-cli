@@ -3,13 +3,16 @@ set -euo pipefail
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 print_step() { echo "  → $1"; }
-abort()       { echo "Error: $1" >&2; exit 1; }
+abort() {
+  echo "Error: $1" >&2
+  exit 1
+}
 
 # ── platform ──────────────────────────────────────────────────────────────────
 case "$(uname -s)" in
-  Darwin) PLATFORM="darwin" ;;
-  Linux)  PLATFORM="linux"  ;;
-  *)      abort "unsupported platform." ;;
+Darwin) PLATFORM="darwin" ;;
+Linux) PLATFORM="linux" ;;
+*) abort "unsupported platform." ;;
 esac
 
 echo "Uninstalling Multigravity..."

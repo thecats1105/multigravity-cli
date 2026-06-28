@@ -7,20 +7,23 @@ RAW="https://raw.githubusercontent.com/$REPO/$BRANCH"
 INSTALL_DIR="/usr/local/bin"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
-print_step () { echo "  → $1"; }
-abort ()       { echo "Error: $1" >&2; exit 1; }
+print_step() { echo "  → $1"; }
+abort() {
+  echo "Error: $1" >&2
+  exit 1
+}
 
 # ── platform ─────────────────────────────────────────────────────────────────
 case "$(uname -s)" in
-  Darwin)
-    PLATFORM="darwin"
-    ;;
-  Linux)
-    PLATFORM="linux"
-    ;;
-  *)
-    abort "unsupported platform. Multigravity currently supports macOS and Linux."
-    ;;
+Darwin)
+  PLATFORM="darwin"
+  ;;
+Linux)
+  PLATFORM="linux"
+  ;;
+*)
+  abort "unsupported platform. Multigravity currently supports macOS and Linux."
+  ;;
 esac
 
 # ── preflight ────────────────────────────────────────────────────────────────
@@ -46,9 +49,9 @@ if [ ! -w "$INSTALL_DIR" ]; then
     fi
 
     if ! grep -qF "$HOME/.local/bin" "$SHELL_RC" 2>/dev/null; then
-      echo "" >> "$SHELL_RC"
-      echo "# Added by Multigravity installer" >> "$SHELL_RC"
-      echo "$LINE" >> "$SHELL_RC"
+      echo "" >>"$SHELL_RC"
+      echo "# Added by Multigravity installer" >>"$SHELL_RC"
+      echo "$LINE" >>"$SHELL_RC"
       print_step "Added $INSTALL_DIR to PATH in $SHELL_RC"
     fi
 

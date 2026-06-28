@@ -25,15 +25,15 @@ platform() {
   raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
 
   case "$raw" in
-    darwin | macos | mac | osx)
-      printf '%s\n' "darwin"
-      ;;
-    linux)
-      printf '%s\n' "linux"
-      ;;
-    *)
-      abort "unsupported platform '$raw'. Multigravity supports macOS and Linux."
-      ;;
+  darwin | macos | mac | osx)
+    printf '%s\n' "darwin"
+    ;;
+  linux)
+    printf '%s\n' "linux"
+    ;;
+  *)
+    abort "unsupported platform '$raw'. Multigravity supports macOS and Linux."
+    ;;
   esac
 }
 
@@ -53,12 +53,12 @@ user_data_dir() {
   local profile_path=$1
 
   case "$(platform)" in
-    darwin)
-      printf '%s/Library/Application Support/Antigravity\n' "$profile_path"
-      ;;
-    linux)
-      printf '%s/.config/Antigravity\n' "$profile_path"
-      ;;
+  darwin)
+    printf '%s/Library/Application Support/Antigravity\n' "$profile_path"
+    ;;
+  linux)
+    printf '%s/.config/Antigravity\n' "$profile_path"
+    ;;
   esac
 }
 
@@ -69,8 +69,8 @@ extensions_dir() {
 
 system_user_data_dir() {
   case "$(platform)" in
-    darwin) printf '%s/Library/Application Support/Antigravity\n' "$HOME" ;;
-    linux)  printf '%s/.config/Antigravity\n' "$HOME" ;;
+  darwin) printf '%s/Library/Application Support/Antigravity\n' "$HOME" ;;
+  linux) printf '%s/.config/Antigravity\n' "$HOME" ;;
   esac
 }
 
@@ -136,32 +136,30 @@ find_app() {
   fi
 
   case "$(platform)" in
-    darwin)
-      for candidate in \
-        "/Applications/Antigravity.app" \
-        "$HOME/Applications/Antigravity.app"
-      do
-        if [ -d "$candidate" ]; then
-          printf '%s\n' "$candidate"
-          return 0
-        fi
-      done
-      ;;
-    linux)
-      for candidate in \
-        "antigravity" \
-        "/usr/share/antigravity/antigravity" \
-        "/usr/bin/antigravity" \
-        "/usr/local/bin/antigravity" \
-        "$HOME/.local/bin/antigravity" \
-        "$HOME/Applications/Antigravity.AppImage"
-      do
-        if command_or_path "$candidate" >/dev/null 2>&1; then
-          command_or_path "$candidate"
-          return 0
-        fi
-      done
-      ;;
+  darwin)
+    for candidate in \
+      "/Applications/Antigravity.app" \
+      "$HOME/Applications/Antigravity.app"; do
+      if [ -d "$candidate" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    done
+    ;;
+  linux)
+    for candidate in \
+      "antigravity" \
+      "/usr/share/antigravity/antigravity" \
+      "/usr/bin/antigravity" \
+      "/usr/local/bin/antigravity" \
+      "$HOME/.local/bin/antigravity" \
+      "$HOME/Applications/Antigravity.AppImage"; do
+      if command_or_path "$candidate" >/dev/null 2>&1; then
+        command_or_path "$candidate"
+        return 0
+      fi
+    done
+    ;;
   esac
 
   return 1
@@ -191,20 +189,20 @@ create_profile_layout() {
   mkdir -p "$(extensions_dir "$profile_path")"
 
   case "$(platform)" in
-    darwin)
-      mkdir -p "$profile_path/Library/Application Support"
+  darwin)
+    mkdir -p "$profile_path/Library/Application Support"
 
-      if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
-        ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
-      fi
-      ;;
-    linux)
-      mkdir -p \
-        "$profile_path/.config/Antigravity" \
-        "$profile_path/.cache" \
-        "$profile_path/.local/share" \
-        "$profile_path/.local/state"
-      ;;
+    if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
+      ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
+    fi
+    ;;
+  linux)
+    mkdir -p \
+      "$profile_path/.config/Antigravity" \
+      "$profile_path/.cache" \
+      "$profile_path/.local/share" \
+      "$profile_path/.local/state"
+    ;;
   esac
 }
 
@@ -301,7 +299,7 @@ create_shortcut_darwin() {
   mkdir -p "$app_dir/Contents/MacOS"
   mkdir -p "$app_dir/Contents/Resources"
 
-  cat <<EOF > "$run_script"
+  cat <<EOF >"$run_script"
 #!/usr/bin/env bash
 export MULTIGRAVITY_HOME=$(shell_quote "$BASE")
 exec $(shell_quote "$launcher") $(shell_quote "$profile") "\$@"
@@ -313,7 +311,7 @@ EOF
     cp "$icon_src" "$app_dir/Contents/Resources/icon.icns"
   fi
 
-  cat <<EOF > "$app_dir/Contents/Info.plist"
+  cat <<EOF >"$app_dir/Contents/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
 "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -351,7 +349,7 @@ create_shortcut_linux() {
   mkdir -p "$launcher_root"
   mkdir -p "$(dirname "$desktop_path")"
 
-  cat <<EOF > "$launcher_path"
+  cat <<EOF >"$launcher_path"
 #!/usr/bin/env sh
 export MULTIGRAVITY_HOME=$(shell_quote "$BASE")
 exec $(shell_quote "$launcher") $(shell_quote "$profile") "\$@"
@@ -359,7 +357,7 @@ EOF
 
   chmod +x "$launcher_path"
 
-  cat <<EOF > "$desktop_path"
+  cat <<EOF >"$desktop_path"
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -379,12 +377,12 @@ EOF
 
 create_shortcut() {
   case "$(platform)" in
-    darwin)
-      create_shortcut_darwin "$1"
-      ;;
-    linux)
-      create_shortcut_linux "$1"
-      ;;
+  darwin)
+    create_shortcut_darwin "$1"
+    ;;
+  linux)
+    create_shortcut_linux "$1"
+    ;;
   esac
 }
 
@@ -393,26 +391,26 @@ remove_shortcut() {
   local target
 
   case "$(platform)" in
-    darwin)
-      target="$(mac_shortcut_path "$profile")"
-      if [ -d "$target" ]; then
-        rm -rf "$target"
-        print_info "Removed shortcut: $target"
-      fi
-      ;;
-    linux)
-      target="$(linux_launcher_path "$profile")"
-      if [ -f "$target" ]; then
-        rm -f "$target"
-        print_info "Removed shortcut: $target"
-      fi
+  darwin)
+    target="$(mac_shortcut_path "$profile")"
+    if [ -d "$target" ]; then
+      rm -rf "$target"
+      print_info "Removed shortcut: $target"
+    fi
+    ;;
+  linux)
+    target="$(linux_launcher_path "$profile")"
+    if [ -f "$target" ]; then
+      rm -f "$target"
+      print_info "Removed shortcut: $target"
+    fi
 
-      target="$(linux_desktop_path "$profile")"
-      if [ -f "$target" ]; then
-        rm -f "$target"
-        print_info "Removed shortcut: $target"
-      fi
-      ;;
+    target="$(linux_desktop_path "$profile")"
+    if [ -f "$target" ]; then
+      rm -f "$target"
+      print_info "Removed shortcut: $target"
+    fi
+    ;;
   esac
 }
 
@@ -754,50 +752,50 @@ template_cmd() {
   shift || true
 
   case "$subcmd" in
-    save)
-      local profile="${1-}" tpl_name="${2-}"
-      validate_name "$profile"
-      validate_name "$tpl_name"
-      local src_path tpl_dir tpl_path
-      src_path="$(profile_dir "$profile")"
-      [ -d "$src_path" ] || abort "profile '$profile' does not exist"
-      tpl_dir="$(templates_dir)"
-      tpl_path="$tpl_dir/$tpl_name"
-      [ -d "$tpl_path" ] && abort "template '$tpl_name' already exists"
-      mkdir -p "$tpl_dir"
-      print_info "Saving '$profile' as template '$tpl_name'..."
-      cp -R "$src_path" "$tpl_path"
-      rm -f "$tpl_path/.shared"
-      print_info "Saved template '$tpl_name'"
-      ;;
-    list)
-      local tpl_dir
-      tpl_dir="$(templates_dir)"
-      echo "Templates:"
-      if [ ! -d "$tpl_dir" ]; then
-        echo "  (none)"
-        return 0
-      fi
-      local any=false
-      for d in "$tpl_dir"/*; do
-        [ -d "$d" ] || continue
-        any=true
-        printf "  %-20s %s\n" "$(basename "$d")" "$(du -sh "$d" 2>/dev/null | cut -f1)"
-      done
-      [ "$any" = false ] && echo "  (none)"
-      ;;
-    delete)
-      local tpl_name="${1-}"
-      validate_name "$tpl_name"
-      local tpl_path
-      tpl_path="$(templates_dir)/$tpl_name"
-      [ -d "$tpl_path" ] || abort "template '$tpl_name' does not exist"
-      rm -rf "$tpl_path"
-      print_info "Deleted template '$tpl_name'"
-      ;;
-    *)
-      abort "usage: multigravity template <save|list|delete>"
-      ;;
+  save)
+    local profile="${1-}" tpl_name="${2-}"
+    validate_name "$profile"
+    validate_name "$tpl_name"
+    local src_path tpl_dir tpl_path
+    src_path="$(profile_dir "$profile")"
+    [ -d "$src_path" ] || abort "profile '$profile' does not exist"
+    tpl_dir="$(templates_dir)"
+    tpl_path="$tpl_dir/$tpl_name"
+    [ -d "$tpl_path" ] && abort "template '$tpl_name' already exists"
+    mkdir -p "$tpl_dir"
+    print_info "Saving '$profile' as template '$tpl_name'..."
+    cp -R "$src_path" "$tpl_path"
+    rm -f "$tpl_path/.shared"
+    print_info "Saved template '$tpl_name'"
+    ;;
+  list)
+    local tpl_dir
+    tpl_dir="$(templates_dir)"
+    echo "Templates:"
+    if [ ! -d "$tpl_dir" ]; then
+      echo "  (none)"
+      return 0
+    fi
+    local any=false
+    for d in "$tpl_dir"/*; do
+      [ -d "$d" ] || continue
+      any=true
+      printf "  %-20s %s\n" "$(basename "$d")" "$(du -sh "$d" 2>/dev/null | cut -f1)"
+    done
+    [ "$any" = false ] && echo "  (none)"
+    ;;
+  delete)
+    local tpl_name="${1-}"
+    validate_name "$tpl_name"
+    local tpl_path
+    tpl_path="$(templates_dir)/$tpl_name"
+    [ -d "$tpl_path" ] || abort "template '$tpl_name' does not exist"
+    rm -rf "$tpl_path"
+    print_info "Deleted template '$tpl_name'"
+    ;;
+  *)
+    abort "usage: multigravity template <save|list|delete>"
+    ;;
   esac
 }
 
@@ -820,7 +818,7 @@ import_profile() {
   local archive="${1-}" profile="${2-}"
 
   [ -n "$archive" ] || abort "usage: multigravity import <archive.tar.gz> [name]"
-  [ -f "$archive" ]  || abort "file not found: $archive"
+  [ -f "$archive" ] || abort "file not found: $archive"
 
   if [ -z "$profile" ]; then
     profile="$(tar -tzf "$archive" 2>/dev/null | head -1 | cut -d'/' -f1)"
