@@ -18,13 +18,13 @@ No more logging in and out. Launch as many profiles as you need, all at once.
 **macOS / Linux**
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/thecats1105/multigravity-cli/main/install.sh)"
 ```
 
 **Windows** — open PowerShell and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/thecats1105/multigravity-cli/main/install.ps1 | iex
 ```
 
 ---
@@ -145,13 +145,13 @@ Follow the instructions to add it to your `.zshrc`, `.bashrc`, or PowerShell `$P
 **macOS / Linux**
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/uninstall.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/thecats1105/multigravity-cli/main/uninstall.sh)"
 ```
 
 **Windows**
 
 ```powershell
-irm https://raw.githubusercontent.com/sujitagarwal/multigravity-cli/main/uninstall.ps1 | iex
+irm https://raw.githubusercontent.com/thecats1105/multigravity-cli/main/uninstall.ps1 | iex
 ```
 
 You'll be asked whether to remove your profile data — nothing is deleted without confirmation.
