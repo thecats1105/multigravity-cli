@@ -81,8 +81,9 @@ echo "  source ~/.zshrc   (or ~/.bashrc, or open a new terminal)"
 echo ""
 echo "Usage:"
 echo "  multigravity help"
-echo "  multigravity new <profile-name>"
-echo "  multigravity <profile-name>"
+echo "  multigravity new <profile-name> [--shared | --linked]"
+echo "  multigravity <profile-name>       (Launches Antigravity IDE)"
+echo "  multigravity agy <profile-name>   (Launches Antigravity CLI)"
 
 if [ "$PLATFORM" = "linux" ] && ! command -v antigravity &>/dev/null && [ ! -x /usr/share/antigravity/antigravity ]; then
   echo ""

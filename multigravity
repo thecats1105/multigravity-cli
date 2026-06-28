@@ -283,19 +283,123 @@ create_shared_layout() {
     mkdir -p "$ext_dir"
   fi
 
+  # CLI settings symlink
+  local sys_agy_settings="$HOME/.gemini/antigravity-cli/settings.json"
+  local profile_agy_settings="$profile_path/.gemini/antigravity-cli/settings.json"
+  if [ -f "$sys_agy_settings" ] && [ ! -e "$profile_agy_settings" ]; then
+    mkdir -p "$(dirname "$profile_agy_settings")"
+    ln -s "$sys_agy_settings" "$profile_agy_settings"
+  fi
+
   case "$(platform)" in
-    darwin)
-      mkdir -p "$profile_path/Library/Application Support"
-      if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
-        ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
+  darwin)
+    mkdir -p "$profile_path/Library/Application Support"
+    if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
+      ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
+    fi
+    ;;
+  linux)
+    mkdir -p \
+      "$profile_path/.cache" \
+      "$profile_path/.local/share" \
+      "$profile_path/.local/state"
+    ;;
+  esac
+}
+
+is_linked_profile() {
+  [ -f "$(profile_dir "$1")/.linked" ]
+}
+
+create_linked_layout() {
+  local profile_path=$1
+  local sys_data sys_ext data_dir ext_dir
+
+  sys_data="$(system_user_data_dir)"
+  sys_ext="$(system_extensions_dir)"
+
+  mkdir -p "$profile_path"
+  touch "$profile_path/.linked"
+
+  # Isolated user-data dir so accounts stay separate
+  data_dir="$(user_data_dir "$profile_path")"
+  mkdir -p "$data_dir/User"
+
+  # Link settings files
+  if [ -d "$sys_data/User" ]; then
+    local f
+    for f in settings.json keybindings.json snippets; do
+      if [ -e "$sys_data/User/$f" ] && [ ! -e "$data_dir/User/$f" ]; then
+        ln -s "$sys_data/User/$f" "$data_dir/User/$f"
       fi
-      ;;
-    linux)
-      mkdir -p \
-        "$profile_path/.cache" \
-        "$profile_path/.local/share" \
-        "$profile_path/.local/state"
-      ;;
+    done
+
+    # Share workspaces, backups, histories
+    for d in workspaceStorage Backups History; do
+      if [ -d "$sys_data/$d" ] && [ ! -e "$data_dir/$d" ]; then
+        ln -s "$sys_data/$d" "$data_dir/$d"
+      fi
+    done
+
+    # Share globalStorage subdirectories (isolate globalStorage files like vscdb and storage.json)
+    if [ -d "$sys_data/User/globalStorage" ]; then
+      mkdir -p "$data_dir/User/globalStorage"
+      for entry in "$sys_data/User/globalStorage"/*; do
+        if [ -d "$entry" ]; then
+          local base_entry
+          base_entry=$(basename "$entry")
+          if [ ! -e "$data_dir/User/globalStorage/$base_entry" ]; then
+            ln -s "$entry" "$data_dir/User/globalStorage/$base_entry"
+          fi
+        fi
+      done
+    fi
+  fi
+
+  # Share extensions
+  ext_dir="$(extensions_dir "$profile_path")"
+  mkdir -p "$(dirname "$ext_dir")"
+  if [ -d "$sys_ext" ]; then
+    rm -rf "$ext_dir"
+    ln -s "$sys_ext" "$ext_dir"
+  else
+    mkdir -p "$ext_dir"
+  fi
+
+  # CLI (agy) configurations & data sharing
+  local sys_gemini="$HOME/.gemini"
+  local profile_gemini="$profile_path/.gemini"
+  if [ -d "$sys_gemini" ]; then
+    mkdir -p "$profile_gemini/antigravity-cli"
+    if [ -f "$sys_gemini/settings.json" ] && [ ! -e "$profile_gemini/settings.json" ]; then
+      ln -s "$sys_gemini/settings.json" "$profile_gemini/settings.json"
+    fi
+    if [ -f "$sys_gemini/antigravity-cli/settings.json" ] && [ ! -e "$profile_gemini/antigravity-cli/settings.json" ]; then
+      ln -s "$sys_gemini/antigravity-cli/settings.json" "$profile_gemini/antigravity-cli/settings.json"
+    fi
+
+    for item in conversations brain cache knowledge scratch implicit log history.jsonl; do
+      local sys_path="$sys_gemini/antigravity-cli/$item"
+      local profile_path_item="$profile_gemini/antigravity-cli/$item"
+      if [ -e "$sys_path" ] && [ ! -e "$profile_path_item" ]; then
+        ln -s "$sys_path" "$profile_path_item"
+      fi
+    done
+  fi
+
+  case "$(platform)" in
+  darwin)
+    mkdir -p "$profile_path/Library/Application Support"
+    if [ ! -e "$profile_path/Library/Keychains" ] && [ -d "$HOME/Library/Keychains" ]; then
+      ln -s "$HOME/Library/Keychains" "$profile_path/Library/Keychains"
+    fi
+    ;;
+  linux)
+    mkdir -p \
+      "$profile_path/.cache" \
+      "$profile_path/.local/share" \
+      "$profile_path/.local/state"
+    ;;
   esac
 }
 
@@ -471,7 +575,13 @@ launch_profile() {
     abort "profile '$profile' does not exist. Run: multigravity new $profile"
   fi
 
-  create_profile_layout "$profile_path"
+  if is_linked_profile "$profile"; then
+    create_linked_layout "$profile_path"
+  elif is_shared_profile "$profile"; then
+    create_shared_layout "$profile_path"
+  else
+    create_profile_layout "$profile_path"
+  fi
 
   app="$(require_app)"
   data_dir="$(user_data_dir "$profile_path")"
@@ -480,23 +590,65 @@ launch_profile() {
   print_info "Launching Antigravity profile '$profile'"
 
   case "$(platform)" in
-    darwin)
-      HOME="$profile_path" open -n "$app" --args \
-        --user-data-dir "$data_dir" \
-        --extensions-dir "$ext_dir" \
-        "$@"
-      ;;
-    linux)
-      HOME="$profile_path" \
+  darwin)
+    HOME="$profile_path" open -n "$app" --args \
+      --user-data-dir "$data_dir" \
+      --extensions-dir "$ext_dir" \
+      "$@"
+    ;;
+  linux)
+    HOME="$profile_path" \
       XDG_CONFIG_HOME="$profile_path/.config" \
       XDG_CACHE_HOME="$profile_path/.cache" \
       XDG_DATA_HOME="$profile_path/.local/share" \
       XDG_STATE_HOME="$profile_path/.local/state" \
       "$app" \
-        --user-data-dir "$data_dir" \
-        --extensions-dir "$ext_dir" \
-        "$@"
-      ;;
+      --user-data-dir "$data_dir" \
+      --extensions-dir "$ext_dir" \
+      "$@"
+    ;;
+  esac
+}
+
+launch_agy_profile() {
+  local profile=$1
+  shift || true
+
+  local profile_path
+  local agy
+
+  profile_path="$(profile_dir "$profile")"
+  if [ ! -d "$profile_path" ]; then
+    abort "profile '$profile' does not exist. Run: multigravity new $profile"
+  fi
+
+  if is_linked_profile "$profile"; then
+    create_linked_layout "$profile_path"
+  elif is_shared_profile "$profile"; then
+    create_shared_layout "$profile_path"
+  else
+    create_profile_layout "$profile_path"
+  fi
+
+  agy="$(require_agy)"
+
+  print_info "Launching Antigravity CLI 'agy' with profile '$profile'"
+
+  case "$(platform)" in
+  darwin)
+    export HOME="$profile_path"
+    export MULTIGRAVITY_PROFILE="$profile"
+    exec "$agy" "$@"
+    ;;
+  linux)
+    export HOME="$profile_path"
+    export XDG_CONFIG_HOME="$profile_path/.config"
+    export XDG_CACHE_HOME="$profile_path/.cache"
+    export XDG_DATA_HOME="$profile_path/.local/share"
+    export XDG_STATE_HOME="$profile_path/.local/state"
+    export MULTIGRAVITY_PROFILE="$profile"
+    exec "$agy" "$@"
+    ;;
   esac
 }
 
@@ -564,6 +716,8 @@ new_profile() {
     cp -R "$tpl_path" "$profile_path"
   elif [ "$shared" = true ]; then
     create_shared_layout "$profile_path"
+  elif [ "$linked" = true ]; then
+    create_linked_layout "$profile_path"
   else
     create_profile_layout "$profile_path"
   fi
@@ -1025,6 +1179,7 @@ Usage: multigravity <command> [args]
 Commands:
   new <name> [options]        Create a new profile + desktop shortcut
       --shared                Share extensions & settings; isolate only accounts
+      --linked                Share extensions, settings, history & cache; isolate only accounts
       --from <template>       Seed from a saved template
   list                        List existing profiles
   status                      Show running state, type, and last-used per profile
