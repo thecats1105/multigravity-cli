@@ -1077,27 +1077,36 @@ help_completion() {
   echo "To enable autocompletion, add the following to your shell profile:"
   echo ""
   case "$shell_name" in
-    zsh)
-      echo "  # Add to ~/.zshrc"
-      echo '  source <(multigravity completion zsh)'
-      ;;
-    bash)
-      echo "  # Add to ~/.bashrc"
-      echo '  source <(multigravity completion bash)'
-      ;;
-    *)
-      echo "  # Your shell ($shell_name) is not natively supported for completion."
-      ;;
+  zsh)
+    echo "  # Add to ~/.zshrc"
+    echo '  source <(multigravity completion zsh)'
+    ;;
+  bash)
+    echo "  # Add to ~/.bashrc"
+    echo '  source <(multigravity completion bash)'
+    ;;
+  fish)
+    echo "  # Run in your terminal:"
+    echo '  mkdir -p ~/.config/fish/completions'
+    echo '  multigravity completion fish > ~/.config/fish/completions/multigravity.fish'
+    ;;
+  *)
+    echo "  # Your shell ($shell_name) is not natively supported for completion."
+    ;;
   esac
   echo ""
-  echo "Then restart your terminal or run: source ~/.$shell_name""rc"
+  if [ "$shell_name" = "fish" ]; then
+    echo "Then restart your terminal or run: source ~/.config/fish/config.fish"
+  else
+    echo "Then restart your terminal or run: source ~/.$shell_name""rc"
+  fi
 }
 
 generate_completion() {
   local shell_type=$1
   case "$shell_type" in
-    zsh)
-      cat <<'EOF'
+  zsh)
+    cat <<'EOF'
 #compdef multigravity
 _multigravity() {
     local -a commands
@@ -1166,11 +1175,41 @@ _multigravity_completions() {
 }
 complete -F _multigravity_completions multigravity
 EOF
-      ;;
+    ;;
+  fish)
+    cat <<'EOF'
+# Disable file completion by default for commands
+complete -c multigravity -f
+
+# Complete subcommands
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a new -d 'Create a new profile'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a list -d 'List existing profiles'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a status -d 'Show running state, type, and last-used'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a rename -d 'Rename a profile'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a delete -d 'Delete a profile'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a clone -d 'Clone an existing profile'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a template -d 'Manage profile templates'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a export -d 'Archive a profile to tar.gz'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a import -d 'Restore a profile from tar.gz'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a update -d 'Update multigravity'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a doctor -d 'Run a system diagnosis'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a stats -d 'Show profile storage usage'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a completion -d 'Setup shell completion'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a agy -d 'Launch Antigravity CLI (agy) with a profile'
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a help -d 'Show help'
+
+# Profiles list helper function
+function __fish_multigravity_profiles
+    multigravity list --raw 2>/dev/null
+end
+
+# Complete profile names for default launch or specific subcommands
+complete -c multigravity -n "not __fish_seen_subcommand_from new list status rename delete clone template export import update doctor stats completion agy help" -a "(__fish_multigravity_profiles)" -d 'Launch profile (IDE)'
+complete -c multigravity -n "__fish_seen_subcommand_from delete rename clone agy" -a "(__fish_multigravity_profiles)" -d 'Profile'
+EOF
+    ;;
   esac
 }
-
-
 
 usage() {
   cat <<EOF

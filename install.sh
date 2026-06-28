@@ -37,9 +37,9 @@ if [ ! -w "$INSTALL_DIR" ]; then
   # auto-add to PATH in the user's shell profile if not already there
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     case "${SHELL:-}" in
-      */zsh)  SHELL_RC="$HOME/.zshrc" ;;
-      */fish) SHELL_RC="$HOME/.config/fish/config.fish" ;;
-      *)      SHELL_RC="$HOME/.bashrc" ;;
+    */zsh) SHELL_RC="$HOME/.zshrc" ;;
+    */fish) SHELL_RC="$HOME/.config/fish/config.fish" ;;
+    *) SHELL_RC="$HOME/.bashrc" ;;
     esac
 
     LINE='export PATH="$HOME/.local/bin:$PATH"'
