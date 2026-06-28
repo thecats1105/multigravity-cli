@@ -673,7 +673,18 @@ list_profiles() {
     local n
     n="$(basename "$dir")"
     [ "$n" = ".templates" ] && continue
-    entries="${entries}${n}"$'\n'
+
+    if [ "$raw" = "--raw" ]; then
+      entries="${entries}${n}"$'\n'
+    else
+      local suffix=""
+      if [ -f "$dir/.shared" ]; then
+        suffix=" (shared)"
+      elif [ -f "$dir/.linked" ]; then
+        suffix=" (linked)"
+      fi
+      entries="${entries}${n}${suffix}"$'\n'
+    fi
   done
 
   if [ -z "$entries" ]; then
@@ -686,17 +697,25 @@ list_profiles() {
 }
 
 new_profile() {
-  local profile="" shared=false from_tpl=""
+  local profile="" shared=false linked=false from_tpl=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --shared)       shared=true ;;
-      --from)         from_tpl="${2-}"; shift ;;
-      -*)             abort "unknown option: $1" ;;
-      *)              profile="$1" ;;
+    --shared) shared=true ;;
+    --linked) linked=true ;;
+    --from)
+      from_tpl="${2-}"
+      shift
+      ;;
+    -*) abort "unknown option: $1" ;;
+    *) profile="$1" ;;
     esac
     shift
   done
+
+  if [ "$shared" = true ] && [ "$linked" = true ]; then
+    abort "cannot specify both --shared and --linked"
+  fi
 
   validate_name "$profile"
 
@@ -933,12 +952,16 @@ status_profiles() {
     fi
 
     local ptype="full"
-    [ -f "$dir/.shared" ] && ptype="shared"
+    if [ -f "$dir/.shared" ]; then
+      ptype="shared"
+    elif [ -f "$dir/.linked" ]; then
+      ptype="linked"
+    fi
 
     local last_used
     case "$(platform)" in
-      darwin) last_used=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$dir" 2>/dev/null || echo "unknown") ;;
-      linux)  last_used=$(stat -c "%y" "$dir" 2>/dev/null | cut -d'.' -f1 || echo "unknown") ;;
+    darwin) last_used=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$dir" 2>/dev/null || echo "unknown") ;;
+    linux) last_used=$(stat -c "%y" "$dir" 2>/dev/null | cut -d'.' -f1 || echo "unknown") ;;
     esac
 
     local size
@@ -1234,71 +1257,80 @@ Commands:
   doctor                      Run a system diagnosis
   stats                       Show storage usage per profile
   completion                  Show setup instructions for shell completion
-  <name> [args...]            Launch Antigravity with the given profile
+  agy <name> [args...]        Launch Antigravity CLI (agy) with the given profile
+  <name> [args...]            Launch Antigravity IDE with the given profile
   help                        Show this help
 
 Profile names: alphanumeric and hyphens only (e.g. work, personal, test-1)
 
 Environment:
-  MULTIGRAVITY_APP      Override the Antigravity app path or command
+  MULTIGRAVITY_APP      Override the Antigravity IDE app path or command
+  MULTIGRAVITY_CLI      Override the Antigravity CLI (agy) path or command
   MULTIGRAVITY_HOME     Override the profile storage directory
 EOF
 }
 
 case "$cmd" in
-  new)
-    shift
-    new_profile "$@"
-    ;;
-  list)
-    list_profiles "${2-}"
-    ;;
-  status)
-    status_profiles
-    ;;
-  rename)
-    rename_profile "${2-}" "${3-}"
-    ;;
-  delete)
-    delete_profile "${2-}"
-    ;;
-  clone)
-    clone_profile "${2-}" "${3-}"
-    ;;
-  template)
-    shift
-    template_cmd "$@"
-    ;;
-  export)
-    export_profile "${2-}" "${3-}"
-    ;;
-  import)
-    import_profile "${2-}" "${3-}"
-    ;;
-  update)
-    update_cli
-    ;;
-  doctor)
-    doctor_cli
-    ;;
-  stats)
-    profile_stats
-    ;;
-  completion)
-    if [ -n "${2-}" ]; then
-      generate_completion "$2"
-    else
-      help_completion
-    fi
-    ;;
-  help | --help | -h)
-    usage
-    ;;
-  "")
-    usage
-    exit 1
-    ;;
-  *)
-    launch_profile "$cmd" "${@:2}"
-    ;;
+new)
+  shift
+  new_profile "$@"
+  ;;
+list)
+  list_profiles "${2-}"
+  ;;
+status)
+  status_profiles
+  ;;
+rename)
+  rename_profile "${2-}" "${3-}"
+  ;;
+delete)
+  delete_profile "${2-}"
+  ;;
+clone)
+  clone_profile "${2-}" "${3-}"
+  ;;
+template)
+  shift
+  template_cmd "$@"
+  ;;
+export)
+  export_profile "${2-}" "${3-}"
+  ;;
+import)
+  import_profile "${2-}" "${3-}"
+  ;;
+update)
+  update_cli
+  ;;
+doctor)
+  doctor_cli
+  ;;
+stats)
+  profile_stats
+  ;;
+agy)
+  shift
+  if [ $# -lt 1 ]; then
+    abort "usage: multigravity agy <profile> [args...]"
+  fi
+  launch_agy_profile "$@"
+  ;;
+completion)
+  if [ -n "${2-}" ]; then
+    generate_completion "$2"
+  else
+    help_completion
+  fi
+  ;;
+help | --help | -h)
+  usage
+  ;;
+"")
+  usage
+  exit 1
+  ;;
+*)
+  launch_profile "$cmd" "${@:2}"
+  ;;
 esac
