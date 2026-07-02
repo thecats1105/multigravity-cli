@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO="sujitagarwal/multigravity-cli"
-BRANCH="main"
+REPO="thecats1105/multigravity-cli"
+BRANCH="readme"
 RAW="https://raw.githubusercontent.com/$REPO/$BRANCH"
 INSTALL_DIR="/usr/local/bin"
 
