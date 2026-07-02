@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$REPO = "sujitagarwal/multigravity-cli"
+$REPO = "thecats1105/multigravity-cli"
 $BRANCH = "main"
 $RAW = "https://raw.githubusercontent.com/$REPO/$BRANCH"
 $INSTALL_DIR = "$env:USERPROFILE\.local\bin"
