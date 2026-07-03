@@ -7,7 +7,7 @@ $INSTALL_DIR = "$env:USERPROFILE\.local\bin"
 
 function Write-Step ($message)
 {
-  Write-Host "  -> $message"
+  Write-Output "  -> $message"
 }
 
 function Abort ($message)
@@ -16,7 +16,7 @@ function Abort ($message)
   exit 1
 }
 
-Write-Host "Installing Multigravity to $INSTALL_DIR ..."
+Write-Output "Installing Multigravity to $INSTALL_DIR ..."
 
 if (!(Test-Path $INSTALL_DIR))
 {
@@ -44,8 +44,8 @@ if (!$IN_PATH)
   }
   [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
   $env:PATH = "$env:PATH;$INSTALL_DIR"
-  Write-Host "  Added to PATH! You may need to restart your terminal for changes to take effect."
-  Write-Host ""
+  Write-Output "  Added to PATH! You may need to restart your terminal for changes to take effect."
+  Write-Output ""
 }
 
 Write-Step "Downloading multigravity.ps1..."
@@ -69,11 +69,11 @@ powershell.exe -ExecutionPolicy Bypass -File "%~dp0multigravity.ps1" %*
 # Save wrapper as ASCII for widest compatibility with cmd.exe
 [System.IO.File]::WriteAllText("$INSTALL_DIR\multigravity.cmd", $wrapper, [System.Text.Encoding]::ASCII)
 
-Write-Host ""
-Write-Host "✓ Multigravity installed successfully!"
-Write-Host ""
-Write-Host "Usage:"
-Write-Host "  multigravity help"
-Write-Host "  multigravity new <profile-name> [--shared | --linked]"
-Write-Host "  multigravity <profile-name>       (Launches Antigravity IDE)"
-Write-Host "  multigravity agy <profile-name>   (Launches Antigravity CLI)"
+Write-Output ""
+Write-Output "✓ Multigravity installed successfully!"
+Write-Output ""
+Write-Output "Usage:"
+Write-Output "  multigravity help"
+Write-Output "  multigravity new <profile-name> [--shared | --linked]"
+Write-Output "  multigravity <profile-name>       (Launches Antigravity IDE)"
+Write-Output "  multigravity agy <profile-name>   (Launches Antigravity CLI)"

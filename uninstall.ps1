@@ -4,11 +4,11 @@ $INSTALL_DIR = "$env:USERPROFILE\.local\bin"
 
 function Write-Step ($message)
 {
-  Write-Host "  -> $message"
+  Write-Output "  -> $message"
 }
 
-Write-Host "Uninstalling Multigravity..."
-Write-Host ""
+Write-Output "Uninstalling Multigravity..."
+Write-Output ""
 
 $removed = 0
 
@@ -50,7 +50,7 @@ $profileBase = if ($env:MULTIGRAVITY_HOME)
 }
 if (Test-Path $profileBase)
 {
-  Write-Host ""
+  Write-Output ""
   $confirm = Read-Host "Remove all profile data at '$profileBase'? [y/N]"
   if ($confirm -match "^[Yy]$")
   {
@@ -58,15 +58,15 @@ if (Test-Path $profileBase)
     Remove-Item -Recurse -Force $profileBase
   } else
   {
-    Write-Host "  Keeping profile data."
+    Write-Output "  Keeping profile data."
   }
 }
 
-Write-Host ""
+Write-Output ""
 if ($removed -eq 0)
 {
-  Write-Host "Multigravity files were not found — nothing to remove."
+  Write-Output "Multigravity files were not found — nothing to remove."
 } else
 {
-  Write-Host "✓ Multigravity uninstalled."
+  Write-Output "✓ Multigravity uninstalled."
 }

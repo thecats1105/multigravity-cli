@@ -117,32 +117,32 @@ function Test-LinkedProfile
 
 function Write-Usage
 {
-  Write-Host "Usage: multigravity <command> [args]"
-  Write-Host ""
-  Write-Host "Commands:"
-  Write-Host "  new <name> [options]        Create a new profile + Start Menu shortcut"
-  Write-Host "      --shared                Share extensions & settings; isolate only accounts"
-  Write-Host "      --linked                Share extensions, settings, history & cache; isolate only accounts"
-  Write-Host "      --from <template>        Seed from a saved template"
-  Write-Host "  list                        List existing profiles"
-  Write-Host "  status                      Show running state, type, and last-used per profile"
-  Write-Host "  rename <old> <new>          Rename a profile (updates shortcut if present)"
-  Write-Host "  delete <name>               Delete a profile and its data"
-  Write-Host "  clone <src> <dest>          Copy an existing profile"
-  Write-Host "  template save <profile> <name>   Save a profile as a reusable template"
-  Write-Host "  template list               List saved templates"
-  Write-Host "  template delete <name>      Remove a template"
-  Write-Host "  export <name> [path]        Archive a profile to a .zip file"
-  Write-Host "  import <archive> [name]     Restore a profile from a .zip archive"
-  Write-Host "  update                      Update multigravity to the latest version"
-  Write-Host "  doctor                      Run a system diagnosis"
-  Write-Host "  stats                       Show storage usage per profile"
-  Write-Host "  completion                  Show setup instructions for shell completion"
-  Write-Host "  agy <name> [args...]        Launch Antigravity CLI (agy) with the given profile"
-  Write-Host "  <name> [args...]            Launch Antigravity IDE with the given profile"
-  Write-Host "  help                        Show this help"
-  Write-Host ""
-  Write-Host "Profile names: alphanumeric and hyphens only (e.g. work, personal, test-1)"
+  Write-Output "Usage: multigravity <command> [args]"
+  Write-Output ""
+  Write-Output "Commands:"
+  Write-Output "  new <name> [options]        Create a new profile + Start Menu shortcut"
+  Write-Output "      --shared                Share extensions & settings; isolate only accounts"
+  Write-Output "      --linked                Share extensions, settings, history & cache; isolate only accounts"
+  Write-Output "      --from <template>        Seed from a saved template"
+  Write-Output "  list                        List existing profiles"
+  Write-Output "  status                      Show running state, type, and last-used per profile"
+  Write-Output "  rename <old> <new>          Rename a profile (updates shortcut if present)"
+  Write-Output "  delete <name>               Delete a profile and its data"
+  Write-Output "  clone <src> <dest>          Copy an existing profile"
+  Write-Output "  template save <profile> <name>   Save a profile as a reusable template"
+  Write-Output "  template list               List saved templates"
+  Write-Output "  template delete <name>      Remove a template"
+  Write-Output "  export <name> [path]        Archive a profile to a .zip file"
+  Write-Output "  import <archive> [name]     Restore a profile from a .zip archive"
+  Write-Output "  update                      Update multigravity to the latest version"
+  Write-Output "  doctor                      Run a system diagnosis"
+  Write-Output "  stats                       Show storage usage per profile"
+  Write-Output "  completion                  Show setup instructions for shell completion"
+  Write-Output "  agy <name> [args...]        Launch Antigravity CLI (agy) with the given profile"
+  Write-Output "  <name> [args...]            Launch Antigravity IDE with the given profile"
+  Write-Output "  help                        Show this help"
+  Write-Output ""
+  Write-Output "Profile names: alphanumeric and hyphens only (e.g. work, personal, test-1)"
 }
 
 function Validate-Name
@@ -350,7 +350,7 @@ function Invoke-LaunchProfile
     exit 1
   }
 
-  Write-Host "Launching Antigravity profile '$PROFILE'"
+  Write-Output "Launching Antigravity profile '$PROFILE'"
     
   # Launch Antigravity with isolated USERPROFILE
   $env:USERPROFILE = $PROFILE_DIR
@@ -391,7 +391,7 @@ function Invoke-LaunchAgyProfile
     exit 1
   }
 
-  Write-Host "Launching Antigravity CLI 'agy' with profile '$PROFILE'"
+  Write-Output "Launching Antigravity CLI 'agy' with profile '$PROFILE'"
 
   $env:USERPROFILE = $PROFILE_DIR
   $env:APPDATA = "$PROFILE_DIR\AppData\Roaming"
@@ -413,7 +413,7 @@ function Invoke-ListProfiles
   param($raw)
   if ($raw -ne "--raw")
   {
-    Write-Host "Existing profiles:"
+    Write-Output "Existing profiles:"
   }
   if (Test-Path $BASE)
   {
@@ -424,7 +424,7 @@ function Invoke-ListProfiles
       {
         if ($raw -eq "--raw")
         {
-          Write-Host "$($p.Name)"
+          Write-Output "$($p.Name)"
         } else
         {
           $suffix = ""
@@ -435,14 +435,14 @@ function Invoke-ListProfiles
           {
             $suffix = " (linked)"
           }
-          Write-Host "$($p.Name)$suffix"
+          Write-Output "$($p.Name)$suffix"
         }
       }
     } elseif ($profiles -is [System.IO.DirectoryInfo])
     {
       if ($raw -eq "--raw")
       {
-        Write-Host "$($profiles.Name)"
+        Write-Output "$($profiles.Name)"
       } else
       {
         $suffix = ""
@@ -453,20 +453,20 @@ function Invoke-ListProfiles
         {
           $suffix = " (linked)"
         }
-        Write-Host "$($profiles.Name)$suffix"
+        Write-Output "$($profiles.Name)$suffix"
       }
     } else
     {
       if ($raw -ne "--raw")
       {
-        Write-Host "(none)"
+        Write-Output "(none)"
       }
     }
   } else
   {
     if ($raw -ne "--raw")
     {
-      Write-Host "(none)"
+      Write-Output "(none)"
     }
   }
 }
@@ -497,7 +497,7 @@ function Invoke-CreateShortcut
   }
   $Shortcut.Save()
 
-  Write-Host "Shortcut created: $SHORTCUT_PATH"
+  Write-Output "Shortcut created: $SHORTCUT_PATH"
 }
 
 function Invoke-NewProfile
@@ -558,7 +558,7 @@ function Invoke-NewProfile
       Write-Error "Error: template '$fromTpl' not found. Run: multigravity template list"
       exit 1
     }
-    Write-Host "Creating profile '$name' from template '$fromTpl'..."
+    Write-Output "Creating profile '$name' from template '$fromTpl'..."
     Copy-Item -Path $tplPath -Destination $profileDir -Recurse
   } elseif ($shared)
   {
@@ -571,7 +571,7 @@ function Invoke-NewProfile
     Invoke-CreateProfile $name
   }
 
-  Write-Host "Created profile '$name'"
+  Write-Output "Created profile '$name'"
   Invoke-CreateShortcut $name
 }
 
@@ -598,17 +598,17 @@ function Invoke-DeleteProfile
       if (Test-Path $SHORTCUT_PATH)
       {
         Remove-Item -Force $SHORTCUT_PATH
-        Write-Host "Removed shortcut: $SHORTCUT_PATH"
+        Write-Output "Removed shortcut: $SHORTCUT_PATH"
       }
-      Write-Host "Deleted profile '$PROFILE'"
+      Write-Output "Deleted profile '$PROFILE'"
     } catch
     {
       Write-Error "Error: could not delete profile directory. Ensure Antigravity is closed and no files are in use."
-      Write-Host "Details: $_"
+      Write-Output "Details: $_"
     }
   } else
   {
-    Write-Host "Aborted."
+    Write-Output "Aborted."
   }
 }
 
@@ -641,7 +641,7 @@ function Invoke-RenameProfile
     Invoke-CreateShortcut $NEW
   }
 
-  Write-Host "Renamed profile '$OLD' to '$NEW'"
+  Write-Output "Renamed profile '$OLD' to '$NEW'"
 }
 
 function Invoke-CloneProfile
@@ -664,11 +664,11 @@ function Invoke-CloneProfile
     exit 1
   }
 
-  Write-Host "Cloning profile '$SRC' to '$DEST'..."
+  Write-Output "Cloning profile '$SRC' to '$DEST'..."
   Copy-Item -Path $SRC_DIR -Destination $DEST_DIR -Recurse
   Invoke-CreateShortcut $DEST
 
-  Write-Host "Successfully cloned '$SRC' to '$DEST'"
+  Write-Output "Successfully cloned '$SRC' to '$DEST'"
 }
 
 function Get-FolderSize
@@ -690,13 +690,13 @@ function Invoke-ProfileStats
 {
   if (!(Test-Path $BASE))
   {
-    Write-Host "No profiles found."
+    Write-Output "No profiles found."
     return
   }
 
-  Write-Host "Profile Storage Usage:"
-  Write-Host ("{0,-20} {1,-10} {2,-10}" -f "PROFILE", "SIZE", "EXTENSIONS")
-  Write-Host ("{0,-20} {1,-10} {2,-10}" -f "-------", "----", "----------")
+  Write-Output "Profile Storage Usage:"
+  Write-Output ("{0,-20} {1,-10} {2,-10}" -f "PROFILE", "SIZE", "EXTENSIONS")
+  Write-Output ("{0,-20} {1,-10} {2,-10}" -f "-------", "----", "----------")
 
   $profiles = Get-ChildItem -Directory -Path $BASE | Where-Object { $_.Name -ne ".templates" }
   foreach ($p in $profiles)
@@ -708,12 +708,12 @@ function Invoke-ProfileStats
     } else
     { 0 
     }
-    Write-Host ("{0,-20} {1,-10} {2,-10}" -f $p.Name, $size, $extCount)
+    Write-Output ("{0,-20} {1,-10} {2,-10}" -f $p.Name, $size, $extCount)
   }
 
-  Write-Host ""
+  Write-Output ""
   $total = Get-FolderSize $BASE
-  Write-Host "Total usage: $total"
+  Write-Output "Total usage: $total"
 }
 
 function Invoke-DoctorCli
@@ -721,25 +721,25 @@ function Invoke-DoctorCli
   $errors = 0
   $warnings = 0
 
-  Write-Host "Checking multigravity environment..."
+  Write-Output "Checking multigravity environment..."
 
   # 1. Antigravity IDE Installation
   if ($APP -and (Test-Path $APP))
   {
-    Write-Host "  [OK] Antigravity IDE: Found at $APP"
+    Write-Output "  [OK] Antigravity IDE: Found at $APP"
   } else
   {
-    Write-Host "  [WARN] Antigravity IDE: Not found. (Optional if using only CLI)"
+    Write-Output "  [WARN] Antigravity IDE: Not found. (Optional if using only CLI)"
     $warnings++
   }
 
   # 1b. Antigravity CLI (agy) Installation
   if ($CLI -and (Test-Path $CLI))
   {
-    Write-Host "  [OK] Antigravity CLI (agy): Found at $CLI"
+    Write-Output "  [OK] Antigravity CLI (agy): Found at $CLI"
   } else
   {
-    Write-Host "  [WARN] Antigravity CLI (agy): Not found. (Optional if using only IDE)"
+    Write-Output "  [WARN] Antigravity CLI (agy): Not found. (Optional if using only IDE)"
     $warnings++
   }
 
@@ -747,10 +747,10 @@ function Invoke-DoctorCli
   $cmdObj = Get-Command multigravity -ErrorAction SilentlyContinue
   if ($cmdObj)
   {
-    Write-Host "  [OK] Global Binary: $($cmdObj.Source)"
+    Write-Output "  [OK] Global Binary: $($cmdObj.Source)"
   } else
   {
-    Write-Host "  [WARN] Global Binary: Not found in PATH. Run install script or update PATH."
+    Write-Output "  [WARN] Global Binary: Not found in PATH. Run install script or update PATH."
     $warnings++
   }
 
@@ -763,30 +763,30 @@ function Invoke-DoctorCli
       $testFile = Join-Path $BASE ".write-test"
       New-Item -ItemType File -Path $testFile -Force -ErrorAction Stop | Out-Null
       Remove-Item $testFile -Force
-      Write-Host "  [OK] Profile storage: $BASE (writable)"
+      Write-Output "  [OK] Profile storage: $BASE (writable)"
     } catch
     {
-      Write-Host "  [FAIL] Profile storage: $BASE (NOT writable)"
+      Write-Output "  [FAIL] Profile storage: $BASE (NOT writable)"
       $errors++
     }
   } else
   {
-    Write-Host "  [WARN] Profile storage: $BASE (Not yet created)"
+    Write-Output "  [WARN] Profile storage: $BASE (Not yet created)"
   }
 
-  Write-Host ""
+  Write-Output ""
   if ($errors -eq 0)
   {
     if ($warnings -eq 0)
     {
-      Write-Host "Your environment looks perfect!"
+      Write-Output "Your environment looks perfect!"
     } else
     {
-      Write-Host "Found $warnings warning(s). Multigravity should still work, but some features might be degraded."
+      Write-Output "Found $warnings warning(s). Multigravity should still work, but some features might be degraded."
     }
   } else
   {
-    Write-Host "Found $errors error(s) and $warnings warning(s). Please fix the errors above."
+    Write-Output "Found $errors error(s) and $warnings warning(s). Please fix the errors above."
   }
 }
 
@@ -808,12 +808,12 @@ function Invoke-UpdateCli
     exit 1
   }
 
-  Write-Host "Updating multigravity from $script_url ..."
+  Write-Output "Updating multigravity from $script_url ..."
   try
   {
     $result = Invoke-WebRequest -Uri $script_url -UseBasicParsing -ErrorAction Stop
     [System.IO.File]::WriteAllText($target, $result.Content, [System.Text.Encoding]::UTF8)
-    Write-Host "Successfully updated multigravity!"
+    Write-Output "Successfully updated multigravity!"
   } catch
   {
     Write-Error "Error: failed to download update: $_"
@@ -823,11 +823,11 @@ function Invoke-UpdateCli
 
 function Invoke-HelpCompletion
 {
-  Write-Host "To enable autocompletion in PowerShell, add the following to your `$PROFILE:"
-  Write-Host ""
-  Write-Host '  Invoke-Expression (& multigravity completion powershell)'
-  Write-Host ""
-  Write-Host "Then restart your terminal or run: . `$PROFILE"
+  Write-Output "To enable autocompletion in PowerShell, add the following to your `$PROFILE:"
+  Write-Output ""
+  Write-Output '  Invoke-Expression (& multigravity completion powershell)'
+  Write-Output ""
+  Write-Output "Then restart your terminal or run: . `$PROFILE"
 }
 
 function Invoke-GenerateCompletion
@@ -847,7 +847,7 @@ Register-ArgumentCompleter -Native -CommandName multigravity -ScriptBlock {
 "@
   } else
   {
-    Write-Host "Only 'powershell' completion is supported on Windows."
+    Write-Output "Only 'powershell' completion is supported on Windows."
   }
 }
 
@@ -873,28 +873,28 @@ function Invoke-TemplateCmd
       { Write-Error "Error: template '$b' already exists"; exit 1 
       }
       New-Item -ItemType Directory -Force -Path $tplDir | Out-Null
-      Write-Host "Saving '$a' as template '$b'..."
+      Write-Output "Saving '$a' as template '$b'..."
       Copy-Item -Path $srcDir -Destination $tplPath -Recurse
       $marker = "$tplPath\.shared"
       if (Test-Path $marker)
       { Remove-Item $marker -Force 
       }
-      Write-Host "Saved template '$b'"
+      Write-Output "Saved template '$b'"
     }
     "list"
     {
       $tplDir = Get-TemplatesDir
-      Write-Host "Templates:"
+      Write-Output "Templates:"
       if (!(Test-Path $tplDir))
-      { Write-Host "  (none)"; return 
+      { Write-Output "  (none)"; return 
       }
       $items = Get-ChildItem -Directory -Path $tplDir -ErrorAction SilentlyContinue
       if ($items.Count -eq 0)
-      { Write-Host "  (none)"; return 
+      { Write-Output "  (none)"; return 
       }
       foreach ($t in $items)
       {
-        Write-Host ("  {0,-20} {1}" -f $t.Name, (Get-FolderSize $t.FullName))
+        Write-Output ("  {0,-20} {1}" -f $t.Name, (Get-FolderSize $t.FullName))
       }
     }
     "delete"
@@ -908,7 +908,7 @@ function Invoke-TemplateCmd
       { Write-Error "Error: template '$a' does not exist"; exit 1 
       }
       Remove-Item -Recurse -Force $tplPath
-      Write-Host "Deleted template '$a'"
+      Write-Output "Deleted template '$a'"
     }
     default
     {
@@ -920,11 +920,11 @@ function Invoke-TemplateCmd
 function Invoke-StatusProfiles
 {
   if (!(Test-Path $BASE))
-  { Write-Host "No profiles found."; return 
+  { Write-Output "No profiles found."; return 
   }
 
-  Write-Host ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f "PROFILE", "RUNNING", "TYPE", "LAST USED", "SIZE")
-  Write-Host ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f "-------", "-------", "----", "---------", "----")
+  Write-Output ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f "PROFILE", "RUNNING", "TYPE", "LAST USED", "SIZE")
+  Write-Output ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f "-------", "-------", "----", "---------", "----")
 
   $dirs = Get-ChildItem -Directory -Path $BASE -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -ne ".templates" }
@@ -961,12 +961,12 @@ function Invoke-StatusProfiles
 
     if ($running -eq "yes")
     {
-      Write-Host ("{0,-18} " -f $d.Name) -NoNewline
-      Write-Host ("{0,-10} " -f $running) -NoNewline -ForegroundColor Green
-      Write-Host ("{0,-12} {1,-20} {2}" -f $ptype, $lastUsed, $size)
+      Write-Output ("{0,-18} " -f $d.Name) -NoNewline
+      Write-Output ("{0,-10} " -f $running) -NoNewline -ForegroundColor Green
+      Write-Output ("{0,-12} {1,-20} {2}" -f $ptype, $lastUsed, $size)
     } else
     {
-      Write-Host ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f $d.Name, $running, $ptype, $lastUsed, $size)
+      Write-Output ("{0,-18} {1,-10} {2,-12} {3,-20} {4}" -f $d.Name, $running, $ptype, $lastUsed, $size)
     }
   }
 }
@@ -988,9 +988,9 @@ function Invoke-ExportProfile
   { $outPath = ".\$name.zip" 
   }
 
-  Write-Host "Exporting '$name' to $outPath ..."
+  Write-Output "Exporting '$name' to $outPath ..."
   Compress-Archive -Path $profileDir -DestinationPath $outPath -Force
-  Write-Host "Done."
+  Write-Output "Done."
 }
 
 function Invoke-ImportProfile
@@ -1020,7 +1020,7 @@ function Invoke-ImportProfile
   }
 
   New-Item -ItemType Directory -Force -Path $BASE | Out-Null
-  Write-Host "Importing as '$name'..."
+  Write-Output "Importing as '$name'..."
 
   $tmp = "$BASE\_mg_import_$(Get-Random)"
   Expand-Archive -Path $archivePath -DestinationPath $tmp -Force
@@ -1036,7 +1036,7 @@ function Invoke-ImportProfile
   }
 
   Invoke-CreateShortcut $name
-  Write-Host "Imported profile '$name'"
+  Write-Output "Imported profile '$name'"
 }
 
 switch ($cmd)
