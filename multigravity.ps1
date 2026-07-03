@@ -410,7 +410,11 @@ function Invoke-LaunchAgyProfile
 
 function Invoke-ListProfiles
 {
-  Write-Host "Existing profiles:"
+  param($raw)
+  if ($raw -ne "--raw")
+  {
+    Write-Host "Existing profiles:"
+  }
   if (Test-Path $BASE)
   {
     $profiles = Get-ChildItem -Directory -Path $BASE | Where-Object { $_.PSIsContainer -and $_.Name -ne ".templates" } | Sort-Object Name
@@ -418,34 +422,52 @@ function Invoke-ListProfiles
     {
       foreach ($p in $profiles)
       {
-        $suffix = ""
-        if (Test-Path "$($p.FullName)\.shared")
+        if ($raw -eq "--raw")
         {
-          $suffix = " (shared)"
-        } elseif (Test-Path "$($p.FullName)\.linked")
+          Write-Host "$($p.Name)"
+        } else
         {
-          $suffix = " (linked)"
+          $suffix = ""
+          if (Test-Path "$($p.FullName)\.shared")
+          {
+            $suffix = " (shared)"
+          } elseif (Test-Path "$($p.FullName)\.linked")
+          {
+            $suffix = " (linked)"
+          }
+          Write-Host "$($p.Name)$suffix"
         }
-        Write-Host "$($p.Name)$suffix"
       }
     } elseif ($profiles -is [System.IO.DirectoryInfo])
     {
-      $suffix = ""
-      if (Test-Path "$($profiles.FullName)\.shared")
+      if ($raw -eq "--raw")
       {
-        $suffix = " (shared)"
-      } elseif (Test-Path "$($profiles.FullName)\.linked")
+        Write-Host "$($profiles.Name)"
+      } else
       {
-        $suffix = " (linked)"
+        $suffix = ""
+        if (Test-Path "$($profiles.FullName)\.shared")
+        {
+          $suffix = " (shared)"
+        } elseif (Test-Path "$($profiles.FullName)\.linked")
+        {
+          $suffix = " (linked)"
+        }
+        Write-Host "$($profiles.Name)$suffix"
       }
-      Write-Host "$($profiles.Name)$suffix"
     } else
     {
-      Write-Host "(none)"
+      if ($raw -ne "--raw")
+      {
+        Write-Host "(none)"
+      }
     }
   } else
   {
-    Write-Host "(none)"
+    if ($raw -ne "--raw")
+    {
+      Write-Host "(none)"
+    }
   }
 }
 
@@ -1032,7 +1054,7 @@ switch ($cmd)
   }
   "list"
   {
-    Invoke-ListProfiles
+    Invoke-ListProfiles $arg1
   }
   "status"
   {
