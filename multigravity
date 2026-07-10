@@ -291,16 +291,47 @@ create_shared_layout() {
     ln -s "$sys_agy_settings" "$profile_agy_settings"
   fi
 
-  # Link shell configs for agent/child shells
+  # Create shell config wrappers for agent/child shells
   local sf
   for sf in .bashrc .zshrc .profile; do
-    if [ -f "$HOME/$sf" ] && [ ! -e "$profile_path/$sf" ]; then
-      ln -s "$HOME/$sf" "$profile_path/$sf"
+    if [ -f "$HOME/$sf" ]; then
+      cat <<EOF >"$profile_path/$sf"
+if [[ "\$HOME" == *"/AntigravityProfiles/"* ]]; then
+  export HOME="\${HOME%%/AntigravityProfiles/*}"
+  export XDG_CONFIG_HOME="\$HOME/.config"
+  export XDG_CACHE_HOME="\$HOME/.cache"
+  export XDG_DATA_HOME="\$HOME/.local/share"
+  export XDG_STATE_HOME="\$HOME/.local/state"
+fi
+if [ -f "\$HOME/$sf" ]; then
+  source "\$HOME/$sf"
+fi
+EOF
     fi
   done
-  if [ -d "$HOME/.config/fish" ] && [ ! -e "$profile_path/.config/fish" ]; then
+  if [ -f "$HOME/.config/fish/config.fish" ]; then
+    mkdir -p "$profile_path/.config/fish"
+    cat <<'EOF' >"$profile_path/.config/fish/config.fish"
+if string match -q '*/AntigravityProfiles/*' $HOME
+  set -gx HOME (string replace -r '/AntigravityProfiles/.*' '' $HOME)
+  set -gx XDG_CONFIG_HOME $HOME/.config
+  set -gx XDG_CACHE_HOME $HOME/.cache
+  set -gx XDG_DATA_HOME $HOME/.local/share
+  set -gx XDG_STATE_HOME $HOME/.local/state
+end
+if test -f $HOME/.config/fish/config.fish
+  source $HOME/.config/fish/config.fish
+end
+EOF
+  fi
+
+  # Link git config
+  if [ -f "$HOME/.gitconfig" ] && [ ! -e "$profile_path/.gitconfig" ]; then
+    ln -s "$HOME/.gitconfig" "$profile_path/.gitconfig"
+  fi
+  if [ -d "$HOME/.config/git" ] && [ ! -e "$profile_path/.config/git" ]; then
     mkdir -p "$profile_path/.config"
-    ln -s "$HOME/.config/fish" "$profile_path/.config/fish"
+    ln -s "$HOME/.config/git" "$profile_path/.config/git"
   fi
 
   case "$(platform)" in
@@ -399,16 +430,47 @@ create_linked_layout() {
     done
   fi
 
-  # Link shell configs for agent/child shells
+  # Create shell config wrappers for agent/child shells
   local sf
   for sf in .bashrc .zshrc .profile; do
-    if [ -f "$HOME/$sf" ] && [ ! -e "$profile_path/$sf" ]; then
-      ln -s "$HOME/$sf" "$profile_path/$sf"
+    if [ -f "$HOME/$sf" ]; then
+      cat <<EOF >"$profile_path/$sf"
+if [[ "\$HOME" == *"/AntigravityProfiles/"* ]]; then
+  export HOME="\${HOME%%/AntigravityProfiles/*}"
+  export XDG_CONFIG_HOME="\$HOME/.config"
+  export XDG_CACHE_HOME="\$HOME/.cache"
+  export XDG_DATA_HOME="\$HOME/.local/share"
+  export XDG_STATE_HOME="\$HOME/.local/state"
+fi
+if [ -f "\$HOME/$sf" ]; then
+  source "\$HOME/$sf"
+fi
+EOF
     fi
   done
-  if [ -d "$HOME/.config/fish" ] && [ ! -e "$profile_path/.config/fish" ]; then
+  if [ -f "$HOME/.config/fish/config.fish" ]; then
+    mkdir -p "$profile_path/.config/fish"
+    cat <<'EOF' >"$profile_path/.config/fish/config.fish"
+if string match -q '*/AntigravityProfiles/*' $HOME
+  set -gx HOME (string replace -r '/AntigravityProfiles/.*' '' $HOME)
+  set -gx XDG_CONFIG_HOME $HOME/.config
+  set -gx XDG_CACHE_HOME $HOME/.cache
+  set -gx XDG_DATA_HOME $HOME/.local/share
+  set -gx XDG_STATE_HOME $HOME/.local/state
+end
+if test -f $HOME/.config/fish/config.fish
+  source $HOME/.config/fish/config.fish
+end
+EOF
+  fi
+
+  # Link git config
+  if [ -f "$HOME/.gitconfig" ] && [ ! -e "$profile_path/.gitconfig" ]; then
+    ln -s "$HOME/.gitconfig" "$profile_path/.gitconfig"
+  fi
+  if [ -d "$HOME/.config/git" ] && [ ! -e "$profile_path/.config/git" ]; then
     mkdir -p "$profile_path/.config"
-    ln -s "$HOME/.config/fish" "$profile_path/.config/fish"
+    ln -s "$HOME/.config/git" "$profile_path/.config/git"
   fi
 
   case "$(platform)" in

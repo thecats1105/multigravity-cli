@@ -223,18 +223,52 @@ function Invoke-CreateSharedProfile
     New-Item -ItemType SymbolicLink -Path $profileAgySettings -Target $sysAgySettings -ErrorAction SilentlyContinue | Out-Null
   }
 
-  # Link PowerShell configs for agent/child shells
-  $sysPowerShell = "$env:USERPROFILE\Documents\PowerShell"
-  $profilePowerShell = "$profileDir\Documents\PowerShell"
-  if (Test-Path $sysPowerShell)
+  # Create PowerShell config wrappers for agent/child shells
+  $realDocuments = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyDocuments)
+  $sysPowerShellDir = "$realDocuments\PowerShell"
+  $profilePowerShellDir = "$profileDir\Documents\PowerShell"
+  
+  if (Test-Path $sysPowerShellDir)
   {
-    if (!(Test-Path (Split-Path $profilePowerShell)))
+    New-Item -ItemType Directory -Force -Path $profilePowerShellDir | Out-Null
+    $profileScript = "$profilePowerShellDir\Microsoft.PowerShell_profile.ps1"
+    $originalScript = "$sysPowerShellDir\Microsoft.PowerShell_profile.ps1"
+    
+    $content = @"
+if (`$env:USERPROFILE -like "*\AntigravityProfiles\*") {
+  `$original = `$env:USERPROFILE.Substring(0, `$env:USERPROFILE.IndexOf("\AntigravityProfiles"))
+  `$env:USERPROFILE = `$original
+  `$env:APPDATA = "`$original\AppData\Roaming"
+  `$env:LOCALAPPDATA = "`$original\AppData\Local"
+}
+if (Test-Path "$originalScript") {
+  . "$originalScript"
+}
+"@
+    [System.IO.File]::WriteAllText($profileScript, $content, [System.Text.Encoding]::UTF8)
+  }
+
+  # Link git config
+  $sysGitFile = "$env:USERPROFILE\.gitconfig"
+  $profileGitFile = "$profileDir\.gitconfig"
+  if (Test-Path $sysGitFile)
+  {
+    if (!(Test-Path $profileGitFile))
     {
-      New-Item -ItemType Directory -Force -Path (Split-Path $profilePowerShell) | Out-Null
+      New-Item -ItemType SymbolicLink -Path $profileGitFile -Target $sysGitFile -ErrorAction SilentlyContinue | Out-Null
     }
-    if (!(Test-Path $profilePowerShell))
+  }
+  $sysGitDir = "$env:USERPROFILE\.config\git"
+  $profileGitDir = "$profileDir\.config\git"
+  if (Test-Path $sysGitDir)
+  {
+    if (!(Test-Path (Split-Path $profileGitDir)))
     {
-      New-Item -ItemType SymbolicLink -Path $profilePowerShell -Target $sysPowerShell -ErrorAction SilentlyContinue | Out-Null
+      New-Item -ItemType Directory -Force -Path (Split-Path $profileGitDir) | Out-Null
+    }
+    if (!(Test-Path $profileGitDir))
+    {
+      New-Item -ItemType SymbolicLink -Path $profileGitDir -Target $sysGitDir -ErrorAction SilentlyContinue | Out-Null
     }
   }
 }
@@ -339,18 +373,52 @@ function Invoke-CreateLinkedProfile
     }
   }
 
-  # Link PowerShell configs for agent/child shells
-  $sysPowerShell = "$env:USERPROFILE\Documents\PowerShell"
-  $profilePowerShell = "$profileDir\Documents\PowerShell"
-  if (Test-Path $sysPowerShell)
+  # Create PowerShell config wrappers for agent/child shells
+  $realDocuments = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyDocuments)
+  $sysPowerShellDir = "$realDocuments\PowerShell"
+  $profilePowerShellDir = "$profileDir\Documents\PowerShell"
+  
+  if (Test-Path $sysPowerShellDir)
   {
-    if (!(Test-Path (Split-Path $profilePowerShell)))
+    New-Item -ItemType Directory -Force -Path $profilePowerShellDir | Out-Null
+    $profileScript = "$profilePowerShellDir\Microsoft.PowerShell_profile.ps1"
+    $originalScript = "$sysPowerShellDir\Microsoft.PowerShell_profile.ps1"
+    
+    $content = @"
+if (`$env:USERPROFILE -like "*\AntigravityProfiles\*") {
+  `$original = `$env:USERPROFILE.Substring(0, `$env:USERPROFILE.IndexOf("\AntigravityProfiles"))
+  `$env:USERPROFILE = `$original
+  `$env:APPDATA = "`$original\AppData\Roaming"
+  `$env:LOCALAPPDATA = "`$original\AppData\Local"
+}
+if (Test-Path "$originalScript") {
+  . "$originalScript"
+}
+"@
+    [System.IO.File]::WriteAllText($profileScript, $content, [System.Text.Encoding]::UTF8)
+  }
+
+  # Link git config
+  $sysGitFile = "$env:USERPROFILE\.gitconfig"
+  $profileGitFile = "$profileDir\.gitconfig"
+  if (Test-Path $sysGitFile)
+  {
+    if (!(Test-Path $profileGitFile))
     {
-      New-Item -ItemType Directory -Force -Path (Split-Path $profilePowerShell) | Out-Null
+      New-Item -ItemType SymbolicLink -Path $profileGitFile -Target $sysGitFile -ErrorAction SilentlyContinue | Out-Null
     }
-    if (!(Test-Path $profilePowerShell))
+  }
+  $sysGitDir = "$env:USERPROFILE\.config\git"
+  $profileGitDir = "$profileDir\.config\git"
+  if (Test-Path $sysGitDir)
+  {
+    if (!(Test-Path (Split-Path $profileGitDir)))
     {
-      New-Item -ItemType SymbolicLink -Path $profilePowerShell -Target $sysPowerShell -ErrorAction SilentlyContinue | Out-Null
+      New-Item -ItemType Directory -Force -Path (Split-Path $profileGitDir) | Out-Null
+    }
+    if (!(Test-Path $profileGitDir))
+    {
+      New-Item -ItemType SymbolicLink -Path $profileGitDir -Target $sysGitDir -ErrorAction SilentlyContinue | Out-Null
     }
   }
 }
