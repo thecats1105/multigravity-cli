@@ -161,9 +161,9 @@ Follow the instructions to add it to your `.zshrc`, `.bashrc`, or PowerShell `$P
 
 To isolate profiles, Multigravity overrides `$HOME` / `$USERPROFILE` variables. However, this causes child shells (like agent shells running inside Antigravity CLI) to lose access to your real configurations, such as `.gitconfig` and `.ssh`.
 
-**Multigravity automatically generates a `.bash_env` file inside your profile directory and injects `BASH_ENV` / `ENV` variables upon launching. This guarantees that non-interactive commands run by coding agents also automatically restore and resolve your original `$HOME` directory.**
+**Multigravity automatically generates a `.bash_env` file inside your profile directory and injects `BASH_ENV` / `ENV` variables upon launching. This guarantees that non-interactive commands run by coding agents are automatically restored and resolve your original `$HOME` directory without any manual setup.**
 
-For your interactive shells, append a single line (or create a file) to restore the original home directories automatically:
+If you also want your **interactive terminal sessions** inside the profile to automatically restore original home directories, you can optionally append a single line (or create a file):
 
 - **WSL Linux Bash/Zsh** (Add to `~/.bashrc` or `~/.zshrc`):
   ```bash
