@@ -93,20 +93,37 @@ Each profile gets an automatic clickable launcher:
 | `multigravity stats` | Show disk usage per profile |
 | `multigravity doctor` | Diagnose your environment |
 | `multigravity update` | Update Multigravity to the latest version |
+| `multigravity init <shell>` | Output environment restoration script for child/agent shells |
 | `multigravity completion` | Set up shell tab-completion |
 | `multigravity help` | Show help |
 
 ---
 
-## Shared Profiles
+## Shared & Linked Profiles
 
 Full profiles are fully isolated — separate extensions, settings, and accounts. That's the default.
+
+### Shared Profiles (`--shared`)
 
 **Shared profiles** go lighter: they symlink extensions and settings from your main Antigravity install, isolating only the account/auth layer. Useful when you need a second account but don't want to duplicate gigabytes of extensions.
 
 ```bash
 multigravity new client-x --shared
 ```
+
+### Linked Profiles (`--linked`)
+
+**Linked profiles** go even further: on top of sharing extensions and settings, they also share your workspaces (`workspaceStorage`), file backups (`Backups`), file histories (`History`), and CLI configurations/cache (under `.gemini/antigravity-cli`). Only the account/auth layers are isolated. This is perfect when you want your profile to behave identically to your main install but using a separate identity.
+
+```bash
+multigravity new client-y --linked
+```
+
+### Shell Environment Sharing
+
+When you create a **Shared** or **Linked** profile, Multigravity automatically links your shell configuration files into the profile directory so you don't lose your local shell alias, prompt, or utility functions:
+- **macOS / Linux**: links `.bashrc`, `.zshrc`, `.profile`, and `.config/fish`
+- **Windows**: links your PowerShell `Documents\PowerShell` directory
 
 ---
 
@@ -137,6 +154,27 @@ multigravity completion
 ```
 
 Follow the instructions to add it to your `.zshrc`, `.bashrc`, or PowerShell `$PROFILE`.
+
+---
+
+## Restoring Environment in Child Shells
+
+To isolate profiles, Multigravity overrides `$HOME` / `$USERPROFILE` variables. However, this causes child shells (like agent shells running inside Antigravity CLI) to lose access to your real configurations, such as `.gitconfig` and `.ssh`.
+
+To fix this, append a single line (or create a file) to restore the original home directories automatically inside child shells:
+
+- **WSL Linux Bash/Zsh** (Add to `~/.bashrc` or `~/.zshrc`):
+  ```bash
+  eval "$(multigravity init bash)"  # or zsh
+  ```
+- **WSL Linux Fish** (Create `~/.config/fish/conf.d/000-multigravity.fish`):
+  ```fish
+  multigravity init fish | source
+  ```
+- **Windows PowerShell 7** (Add to `$PROFILE`):
+  ```powershell
+  Invoke-Expression (& multigravity init powershell)
+  ```
 
 ---
 

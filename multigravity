@@ -291,6 +291,18 @@ create_shared_layout() {
     ln -s "$sys_agy_settings" "$profile_agy_settings"
   fi
 
+  # Link shell configs for agent/child shells
+  local sf
+  for sf in .bashrc .zshrc .profile; do
+    if [ -f "$HOME/$sf" ] && [ ! -e "$profile_path/$sf" ]; then
+      ln -s "$HOME/$sf" "$profile_path/$sf"
+    fi
+  done
+  if [ -d "$HOME/.config/fish" ] && [ ! -e "$profile_path/.config/fish" ]; then
+    mkdir -p "$profile_path/.config"
+    ln -s "$HOME/.config/fish" "$profile_path/.config/fish"
+  fi
+
   case "$(platform)" in
   darwin)
     mkdir -p "$profile_path/Library/Application Support"
@@ -378,13 +390,25 @@ create_linked_layout() {
       ln -s "$sys_gemini/antigravity-cli/settings.json" "$profile_gemini/antigravity-cli/settings.json"
     fi
 
-    for item in conversations brain cache knowledge scratch implicit log history.jsonl; do
+    for item in conversations brain cache knowledge scratch implicit log history.jsonl skills builtin; do
       local sys_path="$sys_gemini/antigravity-cli/$item"
       local profile_path_item="$profile_gemini/antigravity-cli/$item"
       if [ -e "$sys_path" ] && [ ! -e "$profile_path_item" ]; then
         ln -s "$sys_path" "$profile_path_item"
       fi
     done
+  fi
+
+  # Link shell configs for agent/child shells
+  local sf
+  for sf in .bashrc .zshrc .profile; do
+    if [ -f "$HOME/$sf" ] && [ ! -e "$profile_path/$sf" ]; then
+      ln -s "$HOME/$sf" "$profile_path/$sf"
+    fi
+  done
+  if [ -d "$HOME/.config/fish" ] && [ ! -e "$profile_path/.config/fish" ]; then
+    mkdir -p "$profile_path/.config"
+    ln -s "$HOME/.config/fish" "$profile_path/.config/fish"
   fi
 
   case "$(platform)" in
@@ -589,6 +613,8 @@ launch_profile() {
 
   print_info "Launching Antigravity profile '$profile'"
 
+  export MULTIGRAVITY_REAL_HOME="$HOME"
+
   case "$(platform)" in
   darwin)
     HOME="$profile_path" open -n "$app" --args \
@@ -633,6 +659,8 @@ launch_agy_profile() {
   agy="$(require_agy)"
 
   print_info "Launching Antigravity CLI 'agy' with profile '$profile'"
+
+  export MULTIGRAVITY_REAL_HOME="$HOME"
 
   case "$(platform)" in
   darwin)
@@ -1093,6 +1121,33 @@ update_cli() {
   fi
 }
 
+init_cmd() {
+  local shell_type=$1
+  if [ -z "$shell_type" ]; then
+    abort "usage: multigravity init <shell>"
+  fi
+
+  case "$shell_type" in
+  bash | zsh)
+    cat <<'EOF'
+if [[ "$HOME" == *"/AntigravityProfiles/"* ]]; then
+  export HOME="${HOME%%/AntigravityProfiles/*}"
+fi
+EOF
+    ;;
+  fish)
+    cat <<'EOF'
+if string match -q '*/AntigravityProfiles/*' $HOME
+  set -gx HOME (string replace -r '/AntigravityProfiles/.*' '' $HOME)
+end
+EOF
+    ;;
+  *)
+    abort "unsupported shell for init: '$shell_type'. Supported: bash, zsh, fish."
+    ;;
+  esac
+}
+
 help_completion() {
   local shell_name
   shell_name="$(basename "$SHELL")"
@@ -1256,6 +1311,7 @@ Commands:
   update                      Update multigravity to the latest version
   doctor                      Run a system diagnosis
   stats                       Show storage usage per profile
+  init <shell>                Output environment restoration script for child shells
   completion                  Show setup instructions for shell completion
   agy <name> [args...]        Launch Antigravity CLI (agy) with the given profile
   <name> [args...]            Launch Antigravity IDE with the given profile
@@ -1308,6 +1364,9 @@ doctor)
   ;;
 stats)
   profile_stats
+  ;;
+init)
+  init_cmd "${2-}"
   ;;
 agy)
   shift

@@ -137,6 +137,7 @@ function Write-Usage
   Write-Output "  update                      Update multigravity to the latest version"
   Write-Output "  doctor                      Run a system diagnosis"
   Write-Output "  stats                       Show storage usage per profile"
+  Write-Output "  init <shell>                Output environment restoration script for child shells"
   Write-Output "  completion                  Show setup instructions for shell completion"
   Write-Output "  agy <name> [args...]        Launch Antigravity CLI (agy) with the given profile"
   Write-Output "  <name> [args...]            Launch Antigravity IDE with the given profile"
@@ -220,6 +221,21 @@ function Invoke-CreateSharedProfile
   {
     New-Item -ItemType Directory -Force -Path (Split-Path $profileAgySettings) | Out-Null
     New-Item -ItemType SymbolicLink -Path $profileAgySettings -Target $sysAgySettings -ErrorAction SilentlyContinue | Out-Null
+  }
+
+  # Link PowerShell configs for agent/child shells
+  $sysPowerShell = "$env:USERPROFILE\Documents\PowerShell"
+  $profilePowerShell = "$profileDir\Documents\PowerShell"
+  if (Test-Path $sysPowerShell)
+  {
+    if (!(Test-Path (Split-Path $profilePowerShell)))
+    {
+      New-Item -ItemType Directory -Force -Path (Split-Path $profilePowerShell) | Out-Null
+    }
+    if (!(Test-Path $profilePowerShell))
+    {
+      New-Item -ItemType SymbolicLink -Path $profilePowerShell -Target $sysPowerShell -ErrorAction SilentlyContinue | Out-Null
+    }
   }
 }
 
@@ -312,7 +328,7 @@ function Invoke-CreateLinkedProfile
       New-Item -ItemType SymbolicLink -Path $profileAgySettings2 -Target $sysAgySettings2 -ErrorAction SilentlyContinue | Out-Null
     }
 
-    foreach ($item in @("conversations", "brain", "cache", "knowledge", "scratch", "implicit", "log", "history.jsonl"))
+    foreach ($item in @("conversations", "brain", "cache", "knowledge", "scratch", "implicit", "log", "history.jsonl", "skills", "builtin"))
     {
       $srcPath = "$sysGemini\antigravity-cli\$item"
       $destPath = "$profileGemini\antigravity-cli\$item"
@@ -320,6 +336,21 @@ function Invoke-CreateLinkedProfile
       {
         New-Item -ItemType SymbolicLink -Path $destPath -Target $srcPath -ErrorAction SilentlyContinue | Out-Null
       }
+    }
+  }
+
+  # Link PowerShell configs for agent/child shells
+  $sysPowerShell = "$env:USERPROFILE\Documents\PowerShell"
+  $profilePowerShell = "$profileDir\Documents\PowerShell"
+  if (Test-Path $sysPowerShell)
+  {
+    if (!(Test-Path (Split-Path $profilePowerShell)))
+    {
+      New-Item -ItemType Directory -Force -Path (Split-Path $profilePowerShell) | Out-Null
+    }
+    if (!(Test-Path $profilePowerShell))
+    {
+      New-Item -ItemType SymbolicLink -Path $profilePowerShell -Target $sysPowerShell -ErrorAction SilentlyContinue | Out-Null
     }
   }
 }
@@ -353,6 +384,7 @@ function Invoke-LaunchProfile
   Write-Output "Launching Antigravity profile '$PROFILE'"
     
   # Launch Antigravity with isolated USERPROFILE
+  $env:MULTIGRAVITY_REAL_USERPROFILE = $env:USERPROFILE
   $env:USERPROFILE = $PROFILE_DIR
   $env:APPDATA = "$PROFILE_DIR\AppData\Roaming"
   $env:LOCALAPPDATA = "$PROFILE_DIR\AppData\Local"
@@ -393,6 +425,7 @@ function Invoke-LaunchAgyProfile
 
   Write-Output "Launching Antigravity CLI 'agy' with profile '$PROFILE'"
 
+  $env:MULTIGRAVITY_REAL_USERPROFILE = $env:USERPROFILE
   $env:USERPROFILE = $PROFILE_DIR
   $env:APPDATA = "$PROFILE_DIR\AppData\Roaming"
   $env:LOCALAPPDATA = "$PROFILE_DIR\AppData\Local"
@@ -821,6 +854,29 @@ function Invoke-UpdateCli
   }
 }
 
+function Invoke-InitCmd
+{
+  param($shell)
+  if ([string]::IsNullOrWhiteSpace($shell))
+  {
+    Write-Error "Error: usage: multigravity init <shell>"; exit 1
+  }
+  
+  if ($shell -eq "powershell")
+  {
+    @"
+if (`$env:USERPROFILE -like "*\AntigravityProfiles\*") {
+  `$original = `$env:USERPROFILE.Substring(0, `$env:USERPROFILE.IndexOf("\AntigravityProfiles"))
+  `$env:USERPROFILE = `$original
+  `$env:APPDATA = "`$original\AppData\Roaming"
+  `$env:LOCALAPPDATA = "`$original\AppData\Local"
+}
+"@
+  } else {
+    Write-Error "Unsupported shell for Windows init: '$shell'. Supported: powershell."; exit 1
+  }
+}
+
 function Invoke-HelpCompletion
 {
   Write-Output "To enable autocompletion in PowerShell, add the following to your `$PROFILE:"
@@ -1095,6 +1151,10 @@ switch ($cmd)
   "stats"
   {
     Invoke-ProfileStats
+  }
+  "init"
+  {
+    Invoke-InitCmd $arg1
   }
   "agy"
   {
