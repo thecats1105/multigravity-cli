@@ -599,6 +599,15 @@ launch_profile() {
     abort "profile '$profile' does not exist. Run: multigravity new $profile"
   fi
 
+  # Generate .bash_env for non-interactive shells
+  echo 'if [[ "$HOME" == *"/AntigravityProfiles/"* ]]; then
+  export HOME="${HOME%%/AntigravityProfiles/*}"
+  export XDG_CONFIG_HOME="$HOME/.config"
+  export XDG_CACHE_HOME="$HOME/.cache"
+  export XDG_DATA_HOME="$HOME/.local/share"
+  export XDG_STATE_HOME="$HOME/.local/state"
+fi' > "$profile_path/.bash_env"
+
   if is_linked_profile "$profile"; then
     create_linked_layout "$profile_path"
   elif is_shared_profile "$profile"; then
@@ -617,7 +626,10 @@ launch_profile() {
 
   case "$(platform)" in
   darwin)
-    HOME="$profile_path" open -n "$app" --args \
+    HOME="$profile_path" \
+      BASH_ENV="$profile_path/.bash_env" \
+      ENV="$profile_path/.bash_env" \
+      open -n "$app" --args \
       --user-data-dir "$data_dir" \
       --extensions-dir "$ext_dir" \
       "$@"
@@ -628,6 +640,8 @@ launch_profile() {
       XDG_CACHE_HOME="$profile_path/.cache" \
       XDG_DATA_HOME="$profile_path/.local/share" \
       XDG_STATE_HOME="$profile_path/.local/state" \
+      BASH_ENV="$profile_path/.bash_env" \
+      ENV="$profile_path/.bash_env" \
       "$app" \
       --user-data-dir "$data_dir" \
       --extensions-dir "$ext_dir" \
@@ -661,6 +675,8 @@ launch_agy_profile() {
   print_info "Launching Antigravity CLI 'agy' with profile '$profile'"
 
   export MULTIGRAVITY_REAL_HOME="$HOME"
+  export BASH_ENV="$profile_path/.bash_env"
+  export ENV="$profile_path/.bash_env"
 
   case "$(platform)" in
   darwin)
@@ -1132,6 +1148,10 @@ init_cmd() {
     cat <<'EOF'
 if [[ "$HOME" == *"/AntigravityProfiles/"* ]]; then
   export HOME="${HOME%%/AntigravityProfiles/*}"
+  export XDG_CONFIG_HOME="$HOME/.config"
+  export XDG_CACHE_HOME="$HOME/.cache"
+  export XDG_DATA_HOME="$HOME/.local/share"
+  export XDG_STATE_HOME="$HOME/.local/state"
 fi
 EOF
     ;;
@@ -1139,6 +1159,10 @@ EOF
     cat <<'EOF'
 if string match -q '*/AntigravityProfiles/*' $HOME
   set -gx HOME (string replace -r '/AntigravityProfiles/.*' '' $HOME)
+  set -gx XDG_CONFIG_HOME $HOME/.config
+  set -gx XDG_CACHE_HOME $HOME/.cache
+  set -gx XDG_DATA_HOME $HOME/.local/share
+  set -gx XDG_STATE_HOME $HOME/.local/state
 end
 EOF
     ;;
